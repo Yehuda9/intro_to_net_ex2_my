@@ -1,6 +1,49 @@
 import sys, os
 from os.path import getsize
 from socket import socket, AF_INET, SOCK_STREAM
+import watchdog
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+
+
+class Watcher:
+
+    def __init__(self):
+        self.observer = Observer()
+
+    def run(self):
+        event_handler = Handler()
+        self.observer.schedule(event_handler, path_to_folder, recursive=True)
+        self.observer.start()
+        try:
+            while True:
+                time.sleep(5)
+        except:
+            self.observer.stop()
+            print("Error")
+
+        self.observer.join()
+
+
+class Handler(FileSystemEventHandler):
+    def on_created(self, event):
+        print("Received created event - %s." % event.src_path)
+        # upload_file(event.src_path)
+
+    def on_modified(self, event):
+        print("Received modified event - %s." % event.src_path)
+        # remove_file(event.src_path)
+        # upload_file(event.src_path)
+
+    def on_deleted(self, event):
+        print("Received delete event - %s." % event.src_path)
+        # remove_file(event.src_path)
+
+    def on_moved(self, event):
+        print("Received moved event - %s." % event.dest_path)
+        print("Received moved event - %s." % event.src_path)
+        # remove_file(event.src_path)
+        # upload_file(event.dest_path)
 
 
 def get_size_of_dir(path):
@@ -12,14 +55,14 @@ def get_size_of_dir(path):
     return s, d
 
 
-def generate_message(action, path='', size_of_dirs=0, size_of_data=0):
+def generate_message(action, path='', size_of_dirs=0, size_of_data=0, num_of_requests=1):
     if action == 'upload file':
         r_path = path.split(rel_folder_name, 1)[1].lstrip(os.path.sep)
         path = os.path.join(os.getcwd(), r'DB', my_id, rel_folder_name, r_path)
     elif action == 'new client':
         path = rel_folder_name
-    m = "action: " + action + '\n' + 'id:' + my_id + '\n' + 'path:' + path + '\n' + 'size_of_dirs: ' + str(
-        size_of_dirs) + '\n' + 'size_of_data: ' + str(size_of_data)
+    m = "action:" + action + '\n' + 'id:' + my_id + '\n' + 'path:' + path + '\n' + 'size_of_dirs:' + str(
+        size_of_dirs) + '\n' + 'size_of_data:' + str(size_of_data) + '\n' + 'num_of_requests:' + str(num_of_requests)
     size = str(len(m)).zfill(16)
     to_send = size + m
     print(to_send)
@@ -36,11 +79,13 @@ def upload_file(path_to_file):
     print('file size: ', os.path.getsize(path_to_file))
     server_socket.send(bytes(_message, 'utf-8'))
     with open(path_to_file, 'rb') as f:
+        server_socket.send(f.read())
+        return
         while True:
-            b = f.read(1024)
-            if not b:
+            b = f.read()
+            if b == b'':
                 break
-            server_socket.send(b)
+            server_socket.sendall(b)
 
 
 def upload_dir_to_server():
@@ -75,3 +120,5 @@ if __name__ == '__main__':
         my_id = server_socket.recv(128).decode('utf-8')
         print(my_id)
         upload_dir_to_server()
+    w = Watcher()
+    w.run()

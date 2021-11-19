@@ -33,16 +33,18 @@ def get_dir_from_client(_dict, size):
         try:
             _length = int(_length)
         except BaseException:
+            t = client_socket.recv(1024)
+            print(t)
             print('except')
 
         _message = client_socket.recv(_length)
         _message_dict = parse_message(_message)
         if 'upload file' in _message_dict['action']:
-            get_file(_message_dict)
+            _get_file(_message_dict)
             size_received += int(_message_dict['size_of_data'])
         elif 'upload path' in _message_dict['action']:
             get_path(_message_dict)
-        print("size_received: ",size_received)
+        print("size_received: ", size_received)
 
 
 def get_path(_message_dict):
@@ -50,10 +52,23 @@ def get_path(_message_dict):
     # os.mkdirs(os.path.join(path_to_DB, _message_dict['id'], _message_dict['path']))
 
 
-def get_file(_message_dict):
+def _get_file(_message_dict):
     f = open(_message_dict['path'], 'wb')
+    """size_of_data = int(_message_dict['size_of_data'])
+    bytes_recd = 0
+    while bytes_recd < size_of_data:
+        chunk = client_socket.recv(min(size_of_data - bytes_recd, 2048))
+        if chunk == b'':
+            break
+        f.write(chunk)
+        bytes_recd += len(chunk)
+        print('recv ', bytes_recd, ' from socket')"""
+    print("size of data: ", int(_message_dict['size_of_data']))
     d = client_socket.recv(int(_message_dict['size_of_data']))
+    if int(_message_dict['size_of_data']) != len(d):
+        print('read error!!!!!!!!!!!!!!!', int(_message_dict['size_of_data']) - len(d))
     f.write(d)
+    print('len(d): ', len(d))
     f.close()
 
 
@@ -71,12 +86,26 @@ if __name__ == '__main__':
         print(length)
         message = client_socket.recv(int(length))
         message_dict = parse_message(message)
-        if 'new client' in message_dict['action']:
-            # if message_dict['action'].contains('new client'):
-            client_id = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(128))
-            os.mkdir(os.path.join(path_to_DB, client_id))
-            client_socket.send(bytes(client_id, 'utf-8'))
-            # get_path(message_dict)
-            if message_dict['path'] != '':
-                get_dir_from_client(message_dict, int(message_dict['size_of_data']))
+        num_of_requests = int(message_dict['num_of_requests'])
+        for i in range(num_of_requests):
+            if 'new client' in message_dict['action']:
+                # if message_dict['action'].contains('new client'):
+                client_id = ''.join(
+                    random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(128))
+                os.mkdir(os.path.join(path_to_DB, client_id))
+                client_socket.send(bytes(client_id, 'utf-8'))
+                # get_path(message_dict)
+                if message_dict['path'] != '':
+                    get_dir_from_client(message_dict, int(message_dict['size_of_data']))
+            elif 'upload file' in message_dict['action']:
+                pass
+            elif 'delete file':
+                pass
+            length = client_socket.recv(16).decode('utf-8')
+            if not length:
+                break
+            print(length)
+            message = client_socket.recv(int(length))
+            message_dict = parse_message(message)
+        client_socket.close()
         # print(message_dict)
