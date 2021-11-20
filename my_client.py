@@ -1,6 +1,6 @@
 import os
-import time
 import sys
+import time
 from os.path import getsize
 from socket import socket, AF_INET, SOCK_STREAM
 
@@ -20,12 +20,9 @@ class Watcher:
         self.observer.start()
         try:
             while True:
-                time.sleep(10)
-
+                time.sleep(1)
         except KeyboardInterrupt:
             self.observer.stop()
-            print("Error")
-
         self.observer.join()
 
 
@@ -35,7 +32,7 @@ class Handler(FileSystemEventHandler):
         server_socket.connect((server_IP, server_port))
         print("Received created event - %s." % event.src_path)
         if os.path.isdir(event.src_path):
-            upload_path(server_socket, event.src_path)
+            upload_path(server_socket, event.src_path,get_size_of_dir(event.src_path)[2])
         else:
             upload_file(server_socket, event.src_path)
         server_socket.close()
@@ -46,7 +43,7 @@ class Handler(FileSystemEventHandler):
         print("Received modified event - %s." % event.src_path)
         remove_file(server_socket, event.src_path, 2)
         if os.path.isdir(event.src_path):
-            upload_path(server_socket, event.src_path)
+            upload_path(server_socket, event.src_path, get_size_of_dir(event.src_path)[2])
         else:
             upload_file(server_socket, event.src_path)
         server_socket.close()
@@ -65,7 +62,7 @@ class Handler(FileSystemEventHandler):
         print("Received moved event - %s." % event.src_path)
         remove_file(server_socket, event.src_path, 2)
         if os.path.isdir(event.dest_path):
-            upload_path(server_socket, event.dest_path)
+            upload_path(server_socket, event.dest_path, get_size_of_dir(event.src_path)[2])
         else:
             upload_file(server_socket, event.dest_path)
         server_socket.close()

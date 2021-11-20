@@ -33,12 +33,13 @@ def parse_message(m):
 
 
 def remove_dir(path):
-    for root, dirs, files in os.walk(path):
-        for dir in dirs:
-            remove_dir(os.path.join(root, dir))
-            os.rmdir(os.path.join(root, dir))
-        for file in files:
-            os.remove(os.path.join(root, file))
+    if os.path.exists(path):
+        for root, dirs, files in os.walk(path):
+            for dir in dirs:
+                remove_dir(os.path.join(root, dir))
+                os.rmdir(os.path.join(root, dir))
+            for file in files:
+                os.remove(os.path.join(root, file))
 
 
 def _remove_file(_message_dict):
@@ -53,6 +54,7 @@ def _get_path(_message_dict):
 
 
 def _get_file(_message_dict):
+    os.makedirs(os.path.dirname(_message_dict['path']), exist_ok=True)
     f = open(_message_dict['path'], 'wb')
     print("size of data: ", int(_message_dict['size_of_data']))
     d = recv_all(int(_message_dict['size_of_data']))
@@ -92,6 +94,7 @@ if __name__ == '__main__':
             elif 'upload path' in message_dict['action']:
                 print('upload path!!!!!!!!!!')
                 _get_path(message_dict)
+            print(i, num_of_requests)
             if i == num_of_requests - 1:
                 break
             length = recv_all(16)
@@ -101,3 +104,4 @@ if __name__ == '__main__':
             message = recv_all(int(length))
             message_dict = parse_message(message)
         client_socket.close()
+        print('close connection')
