@@ -49,21 +49,24 @@ class Handler(FileSystemEventHandler):
 def get_size_of_dir(path):
     s = 0
     d = 0
+    f = 0
     for root, dirs, files in os.walk(path):
         d += len(dirs)
+        f += len(files) + len(dirs)
         s += sum(getsize(os.path.join(root, name)) for name in files)
-    return s, d
+    return s, d, f
 
 
 def generate_message(action, path='', size_of_dirs=0, size_of_data=0, num_of_requests=1):
-    if action == 'upload file':
+    if action == 'upload file' or action == 'upload path':
         r_path = path.split(rel_folder_name, 1)[1].lstrip(os.path.sep)
         path = os.path.join(os.getcwd(), r'DB', my_id, rel_folder_name, r_path)
     elif action == 'new client':
         path = rel_folder_name
     m = "action:" + action + '\n' + 'id:' + my_id + '\n' + 'path:' + path + '\n' + 'size_of_dirs:' + str(
         size_of_dirs) + '\n' + 'size_of_data:' + str(size_of_data) + '\n' + 'num_of_requests:' + str(num_of_requests)
-    size = str(len(m)).zfill(16)
+    m = bytes(m, 'utf-8')
+    size = bytes(str(len(m)).zfill(16), 'utf-8')
     to_send = size + m
     print(to_send)
     return to_send
@@ -71,13 +74,13 @@ def generate_message(action, path='', size_of_dirs=0, size_of_data=0, num_of_req
 
 def upload_path(path):
     _message = generate_message('upload path', path)
-    server_socket.send(bytes(_message, 'utf-8'))
+    server_socket.send(_message)
 
 
 def upload_file(path_to_file):
     _message = generate_message('upload file', path_to_file, 0, os.path.getsize(path_to_file))
     print('file size: ', os.path.getsize(path_to_file))
-    server_socket.send(bytes(_message, 'utf-8'))
+    server_socket.send(_message)
     with open(path_to_file, 'rb') as f:
         server_socket.send(f.read())
         return
@@ -89,7 +92,7 @@ def upload_file(path_to_file):
 
 
 def upload_dir_to_server():
-    server_socket.send(bytes(generate_message('upload path', rel_folder_name), 'utf-8'))
+    server_socket.send(generate_message('upload path', rel_folder_name))
     for path, dirs, files in os.walk(path_to_folder):
         for d in dirs:
             path_to_file = os.path.join(path, d)
@@ -114,9 +117,10 @@ if __name__ == '__main__':
     else:
         server_socket = socket(AF_INET, SOCK_STREAM)
         server_socket.connect((server_IP, server_port))
-        s, d = get_size_of_dir(path_to_folder)
-        message = generate_message('new client', path_to_folder, d, s)
-        server_socket.send(bytes(message, 'utf-8'))
+        s, d, f = get_size_of_dir(path_to_folder)
+        # f = num of files and subdirs + new client + rootdir
+        message = generate_message('new client', path_to_folder, d, s, f + 2)
+        server_socket.send(message)
         my_id = server_socket.recv(128).decode('utf-8')
         print(my_id)
         upload_dir_to_server()

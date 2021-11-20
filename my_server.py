@@ -6,6 +6,7 @@ from socket import socket, AF_INET, SOCK_STREAM
 
 def parse_message(m):
     m = str(m, 'utf-8')
+    print('m: ', m)
     d = {}
     l = m.split('\n')
     for e in l:
@@ -14,7 +15,7 @@ def parse_message(m):
             k, v = e.split(':', 1)
             d[k] = v
         except:
-            pass
+            print('error parsing')
     print(d)
     return d
 
@@ -47,7 +48,7 @@ def get_dir_from_client(_dict, size):
         print("size_received: ", size_received)
 
 
-def get_path(_message_dict):
+def _get_path(_message_dict):
     os.makedirs(os.path.join(os.getcwd(), 'DB', _message_dict['id'], _message_dict['path']), exist_ok=True)
     # os.mkdirs(os.path.join(path_to_DB, _message_dict['id'], _message_dict['path']))
 
@@ -88,6 +89,7 @@ if __name__ == '__main__':
         message_dict = parse_message(message)
         num_of_requests = int(message_dict['num_of_requests'])
         for i in range(num_of_requests):
+            print(message_dict['action'])
             if 'new client' in message_dict['action']:
                 # if message_dict['action'].contains('new client'):
                 client_id = ''.join(
@@ -96,14 +98,22 @@ if __name__ == '__main__':
                 client_socket.send(bytes(client_id, 'utf-8'))
                 # get_path(message_dict)
                 if message_dict['path'] != '':
-                    get_dir_from_client(message_dict, int(message_dict['size_of_data']))
-            elif 'upload file' in message_dict['action']:
-                pass
-            elif 'delete file':
-                pass
-            length = client_socket.recv(16).decode('utf-8')
-            if not length:
+                    pass
+                    # message_dict['id'] = client_id
+                    # get_path(message_dict)
+                    # get_dir_from_client(message_dict, int(message_dict['size_of_data']))
+            if 'upload file' in message_dict['action']:
+                _get_file(message_dict)
+            elif 'upload path' in message_dict['action']:
+                print('upload path!!!!!!!!!!')
+                _get_path(message_dict)
+            if i == num_of_requests - 1:
                 break
+            length = client_socket.recv(16)
+            print('len: ', length)
+            length = length.decode('utf-8')
+            """if not length:
+                break"""
             print(length)
             message = client_socket.recv(int(length))
             message_dict = parse_message(message)
