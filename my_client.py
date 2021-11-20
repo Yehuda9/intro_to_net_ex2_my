@@ -82,13 +82,15 @@ def upload_file(path_to_file):
     print('file size: ', os.path.getsize(path_to_file))
     server_socket.send(_message)
     with open(path_to_file, 'rb') as f:
-        server_socket.send(f.read())
-        return
+        b = f.read()
+        print('len(b): ',len(b))
+        server_socket.send(b)
+        """return
         while True:
-            b = f.read()
+            b = f.read(1024)
             if b == b'':
                 break
-            server_socket.sendall(b)
+            server_socket.send(b)"""
 
 
 def upload_dir_to_server():

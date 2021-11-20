@@ -4,6 +4,17 @@ import sys, os
 from socket import socket, AF_INET, SOCK_STREAM
 
 
+def recv_all(n):
+    # Helper function to recv n bytes or return None if EOF is hit
+    data = b''
+    while len(data) < n:
+        packet = client_socket.recv(n - len(data))
+        if not packet:
+            return None
+        data += packet
+    return data
+
+
 def parse_message(m):
     m = str(m, 'utf-8')
     print('m: ', m)
@@ -23,7 +34,8 @@ def parse_message(m):
 def get_dir_from_client(_dict, size):
     size_received = 0
     while size_received < size:
-        _length = client_socket.recv(16)
+        # _length = client_socket.recv(16)
+        _length = recv_all(16)
         print(_length)
         _length = _length.decode('utf-8')
         print(_length)
@@ -38,7 +50,8 @@ def get_dir_from_client(_dict, size):
             print(t)
             print('except')
 
-        _message = client_socket.recv(_length)
+        # _message = client_socket.recv(_length)
+        _message = recv_all(_length)
         _message_dict = parse_message(_message)
         if 'upload file' in _message_dict['action']:
             _get_file(_message_dict)
@@ -65,7 +78,8 @@ def _get_file(_message_dict):
         bytes_recd += len(chunk)
         print('recv ', bytes_recd, ' from socket')"""
     print("size of data: ", int(_message_dict['size_of_data']))
-    d = client_socket.recv(int(_message_dict['size_of_data']))
+    d = recv_all(int(_message_dict['size_of_data']))
+    # d = client_socket.recv(int(_message_dict['size_of_data']))
     if int(_message_dict['size_of_data']) != len(d):
         print('read error!!!!!!!!!!!!!!!', int(_message_dict['size_of_data']) - len(d))
     f.write(d)
@@ -83,9 +97,11 @@ if __name__ == '__main__':
     while True:
         client_socket, client_address = server.accept()
         print('accept Connection from: ', client_address)
-        length = client_socket.recv(16).decode('utf-8')
+        # length = client_socket.recv(16).decode('utf-8')
+        length = recv_all(16).decode('utf-8')
         print(length)
-        message = client_socket.recv(int(length))
+        # message = client_socket.recv(int(length))
+        message = recv_all(int(length))
         message_dict = parse_message(message)
         num_of_requests = int(message_dict['num_of_requests'])
         for i in range(num_of_requests):
@@ -109,13 +125,16 @@ if __name__ == '__main__':
                 _get_path(message_dict)
             if i == num_of_requests - 1:
                 break
-            length = client_socket.recv(16)
+            # length = client_socket.recv(16)
+            length = recv_all(16)
             print('len: ', length)
             length = length.decode('utf-8')
             """if not length:
                 break"""
             print(length)
-            message = client_socket.recv(int(length))
+            # message = client_socket.recv(int(length))
+            message = recv_all(int(length))
+
             message_dict = parse_message(message)
         client_socket.close()
         # print(message_dict)
