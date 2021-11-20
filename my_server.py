@@ -32,12 +32,20 @@ def parse_message(m):
     return d
 
 
+def remove_dir(path):
+    for root, dirs, files in os.walk(path):
+        for dir in dirs:
+            remove_dir(os.path.join(root, dir))
+            os.rmdir(os.path.join(root, dir))
+        for file in files:
+            os.remove(os.path.join(root, file))
+
+
 def _remove_file(_message_dict):
-    try:
-        print(_message_dict['path'])
+    if os.path.isdir(_message_dict['path']):
+        remove_dir(_message_dict['path'])
+    else:
         os.remove(_message_dict['path'])
-    except IsADirectoryError:
-        shutil.rmtree(_message_dict['path'])
 
 
 def _get_path(_message_dict):
