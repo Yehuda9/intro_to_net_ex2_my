@@ -53,7 +53,10 @@ def _remove_file(_message_dict):
         # pass
         remove_dir(_message_dict['path'])
     else:
-        os.remove(_message_dict['path'])
+        try:
+            os.remove(_message_dict['path'])
+        except FileNotFoundError:
+            pass
 
 
 def _get_path(_message_dict):
