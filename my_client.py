@@ -32,11 +32,12 @@ class Handler(FileSystemEventHandler):
         server_socket = socket(AF_INET, SOCK_STREAM)
         server_socket.connect((server_IP, server_port))
         print("Received created event - %s." % event.src_path)
-        if os.path.isdir(event.src_path):
+        upload_file(server_socket, event.src_path, get_size_of_dir(event.src_path)[2])
+        """if os.path.isdir(event.src_path):
             upload_dir_to_server(server_socket, event.src_path)
             # upload_path(server_socket, event.src_path, get_size_of_dir(event.src_path)[2])
         else:
-            upload_file(server_socket, event.src_path)
+            upload_file(server_socket, event.src_path)"""
         server_socket.close()
 
     def on_modified(self, event):
@@ -61,11 +62,12 @@ class Handler(FileSystemEventHandler):
         print("Received moved event - %s." % event.src_path)
         print("Received moved event - %s." % event.dest_path)
         remove_file(server_socket, event.src_path, 2)
-        if os.path.isdir(event.dest_path):
+        upload_file(server_socket, event.src_path, get_size_of_dir(event.src_path)[2])
+        """if os.path.isdir(event.dest_path):
             upload_dir_to_server(server_socket, event.dest_path)
             # upload_path(server_socket, event.dest_path, get_size_of_dir(event.src_path)[2])
         else:
-            upload_file(server_socket, event.dest_path)
+            upload_file(server_socket, event.dest_path)"""
         server_socket.close()
 
 
@@ -73,11 +75,13 @@ def get_size_of_dir(path):
     s = 0
     d = 0
     f = 0
-    for root, dirs, files in os.walk(path):
-        d += len(dirs)
-        f += len(files) + len(dirs)
-        s += sum(getsize(os.path.join(root, name)) for name in files)
-    return s, d, f
+    if os.path.isdir:
+        for root, dirs, files in os.walk(path):
+            d += len(dirs)
+            f += len(files) + len(dirs)
+            s += sum(getsize(os.path.join(root, name)) for name in files)
+        return s, d, f
+    return 0, 0, 1
 
 
 def generate_message(action, path='', size_of_dirs=0, size_of_data=0, num_of_requests=1):

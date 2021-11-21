@@ -50,6 +50,7 @@ def remove_dir(path):
 
 def _remove_file(_message_dict):
     if os.path.isdir(_message_dict['path']):
+        # pass
         remove_dir(_message_dict['path'])
     else:
         os.remove(_message_dict['path'])
@@ -60,7 +61,7 @@ def _get_path(_message_dict):
 
 
 def _get_file(_message_dict):
-    os.makedirs(_message_dict['path'], exist_ok=True)
+    os.makedirs(os.path.dirname(_message_dict['path']), exist_ok=True)
     f = open(_message_dict['path'], 'wb')
     # print("size of data: ", int(_message_dict['size_of_data']))
     d = recv_all(int(_message_dict['size_of_data']))
