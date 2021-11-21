@@ -36,11 +36,14 @@ def remove_dir(path):
     if os.path.exists(path):
         for root, dirs, files in os.walk(path):
             for dir in dirs:
+                print('recursive call')
                 remove_dir(os.path.join(root, dir))
-                os.rmdir(os.path.join(root, dir))
+                # print('1 os.rmdir(' + os.path.join(root, dir) + ')')
+                # os.rmdir(os.path.join(root, dir))
             for file in files:
                 os.remove(os.path.join(root, file))
-        os.rmdir(path)
+            print('2 os.rmdir(' + root + ')')
+            os.rmdir(root)
 
 
 def _remove_file(_message_dict):
