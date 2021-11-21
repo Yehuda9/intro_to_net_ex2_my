@@ -28,6 +28,8 @@ def parse_message(m):
             d[k] = v
         except:
             print('error parsing')
+    if not d['action'] == 'new client':
+        d['path'] = os.path.join(os.getcwd(), 'DB', d['id'], d['path'])
     print(d)
     return d
 
@@ -54,11 +56,11 @@ def _remove_file(_message_dict):
 
 
 def _get_path(_message_dict):
-    os.makedirs(os.path.join(os.getcwd(), 'DB', _message_dict['id'], _message_dict['path']), exist_ok=True)
+    os.makedirs(_message_dict['path'], exist_ok=True)
 
 
 def _get_file(_message_dict):
-    os.makedirs(os.path.dirname(_message_dict['path']), exist_ok=True)
+    os.makedirs(_message_dict['path'], exist_ok=True)
     f = open(_message_dict['path'], 'wb')
     # print("size of data: ", int(_message_dict['size_of_data']))
     d = recv_all(int(_message_dict['size_of_data']))
