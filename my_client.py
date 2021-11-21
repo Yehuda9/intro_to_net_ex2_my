@@ -61,7 +61,7 @@ class Handler(FileSystemEventHandler):
         print("Received moved event - %s." % event.src_path)
         print("Received moved event - %s." % event.dest_path)
         remove_file(server_socket, event.src_path, 2)
-        upload_file(server_socket, event.dest_path, get_size_of_dir(event.src_path)[2])
+        # upload_file(server_socket, event.dest_path, get_size_of_dir(event.src_path)[2])
         if os.path.isdir(event.dest_path):
             # upload_dir_to_server(server_socket, event.dest_path)
             upload_path(server_socket, event.dest_path, get_size_of_dir(event.src_path)[2])
