@@ -83,7 +83,7 @@ def get_size_of_dir(path):
 def generate_message(action, path='', size_of_dirs=0, size_of_data=0, num_of_requests=1):
     if action == 'upload file' or action == 'upload path' or action == 'remove file':
         r_path = path.split(rel_folder_name, 1)[1].lstrip(os.path.sep)
-        path = os.path.join(r'DB', my_id, rel_folder_name, r_path)
+        path = os.path.join('.' + os.path.sep, r'DB', my_id, rel_folder_name, r_path)
     elif action == 'new client':
         path = os.path.split(path)[-1]
         # path = rel_folder_name
