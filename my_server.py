@@ -19,7 +19,7 @@ def recv_all(n):
 
 def parse_message(m):
     m = str(m, 'utf-8')
-    print('m: ', m)
+    # print('m: ', m)
     d = {}
     l = m.split('\n')
     for e in l:
@@ -40,6 +40,7 @@ def remove_dir(path):
                 os.rmdir(os.path.join(root, dir))
             for file in files:
                 os.remove(os.path.join(root, file))
+        os.rmdir(path)
 
 
 def _remove_file(_message_dict):
@@ -56,12 +57,12 @@ def _get_path(_message_dict):
 def _get_file(_message_dict):
     os.makedirs(os.path.dirname(_message_dict['path']), exist_ok=True)
     f = open(_message_dict['path'], 'wb')
-    print("size of data: ", int(_message_dict['size_of_data']))
+    # print("size of data: ", int(_message_dict['size_of_data']))
     d = recv_all(int(_message_dict['size_of_data']))
     if int(_message_dict['size_of_data']) != len(d):
         print('read error!!!!!!!!!!!!!!!', int(_message_dict['size_of_data']) - len(d))
     f.write(d)
-    print('len(d): ', len(d))
+    # print('len(d): ', len(d))
     f.close()
 
 
@@ -75,8 +76,10 @@ if __name__ == '__main__':
     while True:
         client_socket, client_address = server.accept()
         print('accept Connection from: ', client_address)
-        length = recv_all(16).decode('utf-8')
-        print(length)
+        length = recv_all(16)
+        # print(length)
+        length = length.decode('utf-8')
+        # print(length)
         message = recv_all(int(length))
         message_dict = parse_message(message)
         num_of_requests = int(message_dict['num_of_requests'])
@@ -92,15 +95,17 @@ if __name__ == '__main__':
             if 'remove file' in message_dict['action']:
                 _remove_file(message_dict)
             elif 'upload path' in message_dict['action']:
-                print('upload path!!!!!!!!!!')
+                # print('upload path!!!!!!!!!!')
                 _get_path(message_dict)
-            print(i, num_of_requests)
+            # print(i, num_of_requests)
             if i == num_of_requests - 1:
                 break
             length = recv_all(16)
-            print('len: ', length)
+            # print('len: ', length)
+            if not length:
+                break
             length = length.decode('utf-8')
-            print(length)
+            # print(length)
             message = recv_all(int(length))
             message_dict = parse_message(message)
         client_socket.close()
