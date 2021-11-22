@@ -145,9 +145,8 @@ if __name__ == '__main__':
     rel_folder_name = path_to_folder.split(os.sep)[-1]
     time_between_syncs = sys.argv[4]
     my_id = '0'
-    _server_socket = socket(AF_INET, SOCK_STREAM)
-    _server_socket.connect((server_IP, server_port))
-    util = Util(_server_socket)
+    util = utils.Utils('client', socket(AF_INET, SOCK_STREAM), rel_folder_name, my_id)
+    util.get_socket().connect((server_IP, server_port))
     if len(sys.argv) == 6:
         my_id = sys.argv[5]
         # create new folder and get all the files from the server.
@@ -156,8 +155,9 @@ if __name__ == '__main__':
         # f = num of files and subdirs + new client + rootdir
         message = util.generate_message('new client', path_to_folder, d, s, f + 2)
         util.get_socket().send(message)
-        my_id = get_socket().recv(128).decode('utf-8')
+        my_id = util.get_socket().recv(128).decode('utf-8')
         # print(my_id)
         util.upload_dir_to_server(path_to_folder)
+    util.set_id(my_id)
     w = Watcher()
     w.run()
