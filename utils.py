@@ -8,7 +8,6 @@ import watchdog
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
-from my_server import remove_dir
 
 
 class Utils:
@@ -65,7 +64,7 @@ class Utils:
             for root, dirs, files in os.walk(path):
                 for dir in dirs:
                     print('recursive call')
-                    remove_dir(os.path.join(root, dir))
+                    self.remove_dir(os.path.join(root, dir))
                     # print('1 os.rmdir(' + os.path.join(root, dir) + ')')
                     # os.rmdir(os.path.join(root, dir))
                 for file in files:
@@ -76,7 +75,7 @@ class Utils:
     def remove_file(self, _message_dict):
         if os.path.isdir(_message_dict['path']):
             # pass
-            remove_dir(_message_dict['path'])
+            self.remove_dir(_message_dict['path'])
         else:
             try:
                 os.remove(_message_dict['path'])
@@ -127,7 +126,7 @@ class Utils:
 
     def send_remove_file(self, path, num_of_requests=1):
         _message = self.generate_message('remove file', path, 0, 0, num_of_requests)
-        get_socket().send(_message)
+        self.get_socket().send(_message)
 
 
     def upload_path(self, path, num_of_requests=1):
