@@ -81,7 +81,7 @@ if __name__ == '__main__':
     path_to_DB = os.path.join("./", "DB/")
     os.makedirs(os.path.dirname(path_to_DB), exist_ok=True)
     my_port = int(sys.argv[1])
-    util = Util(socket(AF_INET, SOCK_STREAM))
+    util = Util('server',socket(AF_INET, SOCK_STREAM))
     # server = socket(AF_INET, SOCK_STREAM)
     util.get_socket().bind(('', my_port))
     util.get_socket().listen(5)
@@ -112,7 +112,7 @@ if __name__ == '__main__':
             # print(i, num_of_requests)
             if i == num_of_requests - 1:
                 break
-            length = recv_all(16)
+            length = util.recv_all(16)
             # print('len: ', length)
             if not length:
                 break
