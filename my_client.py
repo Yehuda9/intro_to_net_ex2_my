@@ -149,6 +149,7 @@ if __name__ == '__main__':
     util.get_socket().connect((server_IP, server_port))
     if len(sys.argv) == 6:
         my_id = sys.argv[5]
+        util.set_id(my_id)
         # create new folder and get all the files from the server.
     else:
         s, d, f = util.get_size_of_dir(path_to_folder)
@@ -156,8 +157,8 @@ if __name__ == '__main__':
         message = util.generate_message('new client', path_to_folder, d, s, f + 2)
         util.get_socket().send(message)
         my_id = util.get_socket().recv(128).decode('utf-8')
+        util.set_id(my_id)
         # print(my_id)
         util.upload_dir_to_server(path_to_folder)
-    util.set_id(my_id)
     w = Watcher()
     w.run()
