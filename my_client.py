@@ -44,7 +44,7 @@ class Handler(FileSystemEventHandler):
         if not os.path.isdir(event.src_path):
             server_socket = socket(AF_INET, SOCK_STREAM)
             server_socket.connect((server_IP, server_port))
-            remove_file(server_socket, event.src_path, 2)
+            remove_file(server_socket, event.src_path, get_size_of_dir(event.src_path)[2]*2)
             upload_file(server_socket, event.src_path)
             server_socket.close()
 
@@ -52,7 +52,7 @@ class Handler(FileSystemEventHandler):
         server_socket = socket(AF_INET, SOCK_STREAM)
         server_socket.connect((server_IP, server_port))
         print("Received delete event - %s." % event.src_path)
-        remove_file(server_socket, event.src_path)
+        remove_file(server_socket, event.src_path, get_size_of_dir(event.src_path)[2])
         server_socket.close()
 
     def on_moved(self, event):
@@ -60,12 +60,14 @@ class Handler(FileSystemEventHandler):
         server_socket.connect((server_IP, server_port))
         print("Received moved event - %s." % event.src_path)
         print("Received moved event - %s." % event.dest_path)
-        remove_file(server_socket, event.src_path, get_size_of_dir(event.src_path)[2])
+        num_of_requests = get_size_of_dir(event.src_path)[2]
         # upload_file(server_socket, event.dest_path, get_size_of_dir(event.src_path)[2])
         if os.path.isdir(event.dest_path):
+            remove_file(server_socket, event.src_path, num_of_requests)
             # upload_dir_to_server(server_socket, event.dest_path)
             upload_path(server_socket, event.dest_path, get_size_of_dir(event.src_path)[2])
         else:
+            remove_file(server_socket, event.src_path, num_of_requests*2)
             upload_file(server_socket, event.dest_path)
         server_socket.close()
 
@@ -74,7 +76,7 @@ def get_size_of_dir(path):
     s = 0
     d = 0
     f = 0
-    if os.path.isdir:
+    if os.path.isdir(path):
         for root, dirs, files in os.walk(path):
             d += len(dirs)
             f += len(files) + len(dirs)
