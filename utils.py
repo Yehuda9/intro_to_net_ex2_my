@@ -12,6 +12,7 @@ from my_server import remove_dir
 
 
 class Utils:
+
     def __init__(self, connection, s, rel_folder_name='', id='0'):
         self.__connection = connection
         self.__socket = s
@@ -72,7 +73,7 @@ class Utils:
                 print('2 os.rmdir(' + root + ')')
                 os.rmdir(root)
 
-    def _remove_file(self, _message_dict):
+    def remove_file(self, _message_dict):
         if os.path.isdir(_message_dict['path']):
             # pass
             remove_dir(_message_dict['path'])
@@ -82,10 +83,10 @@ class Utils:
             except FileNotFoundError:
                 pass
 
-    def _get_path(self, _message_dict):
+    def get_path(self, _message_dict):
         os.makedirs(_message_dict['path'], exist_ok=True)
 
-    def _get_file(self, _message_dict):
+    def get_file(self, _message_dict):
         os.makedirs(os.path.dirname(_message_dict['path']), exist_ok=True)
         f = open(_message_dict['path'], 'wb')
         # print("size of data: ", int(_message_dict['size_of_data']))
@@ -124,9 +125,10 @@ class Utils:
         print(to_send)
         return to_send
 
-    def remove_file(self, path, num_of_requests=1):
+    def send_remove_file(self, path, num_of_requests=1):
         _message = self.generate_message('remove file', path, 0, 0, num_of_requests)
-        self.get_socket().send(_message)
+        get_socket().send(_message)
+
 
     def upload_path(self, path, num_of_requests=1):
         _message = self.generate_message('upload path', path, 0, 0, num_of_requests)

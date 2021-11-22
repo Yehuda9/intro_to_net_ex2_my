@@ -2,10 +2,11 @@ import os
 import random
 import string
 import sys
+import utils
+from utils import *
 from socket import socket, AF_INET, SOCK_STREAM
 
-
-def recv_all(n):
+"""def recv_all(n):
     if n == 0:
         return b''
     data = b''
@@ -15,9 +16,9 @@ def recv_all(n):
             return None
         data += packet
     return data
+"""
 
-
-def parse_message(m):
+"""def parse_message(m):
     m = str(m, 'utf-8')
     # print('m: ', m)
     d = {}
@@ -32,9 +33,9 @@ def parse_message(m):
         d['path'] = os.path.join(os.getcwd(), 'DB', d['id'], d['path'])
     print(d)
     return d
+"""
 
-
-def remove_dir(path):
+"""def remove_dir(path):
     if os.path.exists(path):
         for root, dirs, files in os.walk(path):
             for dir in dirs:
@@ -46,9 +47,9 @@ def remove_dir(path):
                 os.remove(os.path.join(root, file))
             print('2 os.rmdir(' + root + ')')
             os.rmdir(root)
+"""
 
-
-def _remove_file(_message_dict):
+"""def _remove_file(_message_dict):
     if os.path.isdir(_message_dict['path']):
         # pass
         remove_dir(_message_dict['path'])
@@ -57,13 +58,14 @@ def _remove_file(_message_dict):
             os.remove(_message_dict['path'])
         except FileNotFoundError:
             pass
+"""
 
 
-def _get_path(_message_dict):
+"""def _get_path(_message_dict):
     os.makedirs(_message_dict['path'], exist_ok=True)
+"""
 
-
-def _get_file(_message_dict):
+"""def _get_file(_message_dict):
     os.makedirs(os.path.dirname(_message_dict['path']), exist_ok=True)
     f = open(_message_dict['path'], 'wb')
     # print("size of data: ", int(_message_dict['size_of_data']))
@@ -73,24 +75,25 @@ def _get_file(_message_dict):
     f.write(d)
     # print('len(d): ', len(d))
     f.close()
-
+"""
 
 if __name__ == '__main__':
     path_to_DB = os.path.join("./", "DB/")
     os.makedirs(os.path.dirname(path_to_DB), exist_ok=True)
     my_port = int(sys.argv[1])
-    server = socket(AF_INET, SOCK_STREAM)
-    server.bind(('', my_port))
-    server.listen(5)
+    util = Util('server',socket(AF_INET, SOCK_STREAM))
+    # server = socket(AF_INET, SOCK_STREAM)
+    util.get_socket().bind(('', my_port))
+    util.get_socket().listen(5)
     while True:
-        client_socket, client_address = server.accept()
+        client_socket, client_address = util.get_socket().accept()
         print('accept Connection from: ', client_address)
         length = recv_all(16)
         # print(length)
         length = length.decode('utf-8')
         # print(length)
-        message = recv_all(int(length))
-        message_dict = parse_message(message)
+        message = util.recv_all(int(length))
+        message_dict = util.parse_message(message)
         num_of_requests = int(message_dict['num_of_requests'])
         for i in range(num_of_requests):
             print(message_dict['action'])
@@ -100,22 +103,22 @@ if __name__ == '__main__':
                 os.mkdir(os.path.join(path_to_DB, client_id))
                 client_socket.send(bytes(client_id, 'utf-8'))
             if 'upload file' in message_dict['action']:
-                _get_file(message_dict)
+                util.get_file(message_dict)
             if 'remove file' in message_dict['action']:
-                _remove_file(message_dict)
+                util.remove_file(message_dict)
             elif 'upload path' in message_dict['action']:
                 # print('upload path!!!!!!!!!!')
-                _get_path(message_dict)
+                util.get_path(message_dict)
             # print(i, num_of_requests)
             if i == num_of_requests - 1:
                 break
-            length = recv_all(16)
+            length = util.recv_all(16)
             # print('len: ', length)
             if not length:
                 break
             length = length.decode('utf-8')
             # print(length)
-            message = recv_all(int(length))
-            message_dict = parse_message(message)
-        client_socket.close()
+            message = util.recv_all(int(length))
+            message_dict = util.parse_message(message)
+        util.get_socket().close()
         print('close connection')
