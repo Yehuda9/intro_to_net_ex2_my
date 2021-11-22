@@ -46,7 +46,7 @@ class Handler(FileSystemEventHandler):
         if not os.path.isdir(event.src_path):
             util.set_socket(socket(AF_INET, SOCK_STREAM))
             util.get_socket().connect((server_IP, server_port))
-            util.remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2] * 2)
+            util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2] * 2)
             util.upload_file(event.src_path)
             util.get_socket().close()
 
@@ -54,7 +54,7 @@ class Handler(FileSystemEventHandler):
         util.set_socket(socket(AF_INET, SOCK_STREAM))
         util.get_socket().connect((server_IP, server_port))
         print("Received delete event - %s." % event.src_path)
-        util.remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2])
+        util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2])
         util.get_socket().close()
 
     def on_moved(self, event):
@@ -65,11 +65,11 @@ class Handler(FileSystemEventHandler):
         num_of_requests = util.get_size_of_dir(event.src_path)[2]
         # upload_file(server_socket, event.dest_path, get_size_of_dir(event.src_path)[2])
         if os.path.isdir(event.dest_path):
-            util.remove_file(event.src_path, num_of_requests)
+            util.send_remove_file(event.src_path, num_of_requests)
             # upload_dir_to_server(server_socket, event.dest_path)
             util.upload_path(event.dest_path, util.get_size_of_dir(event.src_path)[2])
         else:
-            util.remove_file(event.src_path, num_of_requests * 2)
+            util.send_remove_file(event.src_path, num_of_requests * 2)
             util.upload_file(event.dest_path)
         util.get_socket().close()
 
