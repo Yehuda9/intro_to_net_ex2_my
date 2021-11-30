@@ -105,7 +105,8 @@ class Utils:
                 d += len(dirs)
                 f += len(files) + len(dirs)
                 s += sum(getsize(os.path.join(root, name)) for name in files)
-            return s, d, f
+            if f > 0:
+                return s, d, f
         return 0, 0, 1
 
     def generate_message(self, action, path='', size_of_dirs=0, size_of_data=0, num_of_requests=1):
