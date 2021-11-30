@@ -2,9 +2,10 @@ import os
 import random
 import string
 import sys
+from socket import socket, AF_INET, SOCK_STREAM
+
 import utils
 from utils import *
-from socket import socket, AF_INET, SOCK_STREAM
 
 """def recv_all(n):
     if n == 0:
@@ -60,7 +61,6 @@ from socket import socket, AF_INET, SOCK_STREAM
             pass
 """
 
-
 """def _get_path(_message_dict):
     os.makedirs(_message_dict['path'], exist_ok=True)
 """
@@ -81,14 +81,16 @@ if __name__ == '__main__':
     path_to_DB = os.path.join("./", "DB/")
     os.makedirs(os.path.dirname(path_to_DB), exist_ok=True)
     my_port = int(sys.argv[1])
-    util = Util('server',socket(AF_INET, SOCK_STREAM))
     # server = socket(AF_INET, SOCK_STREAM)
-    util.get_socket().bind(('', my_port))
-    util.get_socket().listen(5)
+    server = socket(AF_INET, SOCK_STREAM)
+    server.bind(('', my_port))
+    server.listen(5)
+    util = utils.Utils('server', None)
     while True:
-        client_socket, client_address = util.get_socket().accept()
+        client_socket, client_address = server.accept()
+        util.set_socket(client_socket)
         print('accept Connection from: ', client_address)
-        length = recv_all(16)
+        length = util.recv_all(16)
         # print(length)
         length = length.decode('utf-8')
         # print(length)
@@ -101,6 +103,7 @@ if __name__ == '__main__':
                 client_id = ''.join(
                     random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(128))
                 os.mkdir(os.path.join(path_to_DB, client_id))
+                util.set_id(client_id)
                 client_socket.send(bytes(client_id, 'utf-8'))
             if 'upload file' in message_dict['action']:
                 util.get_file(message_dict)

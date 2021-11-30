@@ -46,7 +46,7 @@ class Handler(FileSystemEventHandler):
         if not os.path.isdir(event.src_path):
             util.set_socket(socket(AF_INET, SOCK_STREAM))
             util.get_socket().connect((server_IP, server_port))
-            util.remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2] * 2)
+            util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2] * 2)
             util.upload_file(event.src_path)
             util.get_socket().close()
 
@@ -54,7 +54,7 @@ class Handler(FileSystemEventHandler):
         util.set_socket(socket(AF_INET, SOCK_STREAM))
         util.get_socket().connect((server_IP, server_port))
         print("Received delete event - %s." % event.src_path)
-        util.remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2])
+        util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2])
         util.get_socket().close()
 
     def on_moved(self, event):
@@ -62,14 +62,14 @@ class Handler(FileSystemEventHandler):
         util.get_socket().connect((server_IP, server_port))
         print("Received moved event - %s." % event.src_path)
         print("Received moved event - %s." % event.dest_path)
-        num_of_requests = util.get_size_of_dir(event.src_path)[2]
+        num_of_requests = util.get_size_of_dir(event.src_path)[2]+1
         # upload_file(server_socket, event.dest_path, get_size_of_dir(event.src_path)[2])
         if os.path.isdir(event.dest_path):
-            util.remove_file(event.src_path, num_of_requests)
+            util.send_remove_file(event.src_path, num_of_requests)
             # upload_dir_to_server(server_socket, event.dest_path)
             util.upload_path(event.dest_path, util.get_size_of_dir(event.src_path)[2])
         else:
-            util.remove_file(event.src_path, num_of_requests * 2)
+            util.send_remove_file(event.src_path, num_of_requests)
             util.upload_file(event.dest_path)
         util.get_socket().close()
 
@@ -149,6 +149,7 @@ if __name__ == '__main__':
     util.get_socket().connect((server_IP, server_port))
     if len(sys.argv) == 6:
         my_id = sys.argv[5]
+        util.set_id(my_id)
         # create new folder and get all the files from the server.
     else:
         s, d, f = util.get_size_of_dir(path_to_folder)
@@ -156,8 +157,8 @@ if __name__ == '__main__':
         message = util.generate_message('new client', path_to_folder, d, s, f + 2)
         util.get_socket().send(message)
         my_id = util.get_socket().recv(128).decode('utf-8')
+        util.set_id(my_id)
         # print(my_id)
         util.upload_dir_to_server(path_to_folder)
-    util.set_id(my_id)
     w = Watcher()
     w.run()
