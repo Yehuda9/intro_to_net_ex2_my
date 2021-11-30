@@ -9,7 +9,6 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 
-
 class Utils:
 
     def __init__(self, connection, s, rel_folder_name='', id='0'):
@@ -31,6 +30,9 @@ class Utils:
 
     def set_id(self, id):
         self.__id = id
+
+    def set_rel_folder_name(self, rel_folder_name):
+        self.__rel_folder_name = rel_folder_name
 
     def recv_all(self, n):
         if n == 0:
@@ -54,7 +56,9 @@ class Utils:
                 d[k] = v
             except:
                 print('error parsing')
-        if not d['action'] == 'new client':
+        if self.__connection == 'client':
+            d['path'] = os.path.join(self.__rel_folder_name, d['path'])
+        elif not d['action'] == 'new client':
             d['path'] = os.path.join(os.getcwd(), 'DB', d['id'], d['path'])
         print(d)
         return d
@@ -112,7 +116,7 @@ class Utils:
     def generate_message(self, action, path='', size_of_dirs=0, size_of_data=0, num_of_requests=1):
         if action == 'upload file' or action == 'upload path' or action == 'remove file':
             r_path = path.split(self.__rel_folder_name, 1)[1].lstrip(os.path.sep)
-            path = os.path.join(self.__rel_folder_name, r_path)
+            path = os.path.join(self.__rel_folder_name.split(os.path.sep)[-1], r_path)
         elif action == 'new client':
             path = os.path.split(path)[-1]
             # path = rel_folder_name
@@ -128,7 +132,6 @@ class Utils:
     def send_remove_file(self, path, num_of_requests=1):
         _message = self.generate_message('remove file', path, 0, 0, num_of_requests)
         self.get_socket().send(_message)
-
 
     def upload_path(self, path, num_of_requests=1):
         _message = self.generate_message('upload path', path, 0, 0, num_of_requests)

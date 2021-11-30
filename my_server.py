@@ -77,6 +77,56 @@ from utils import *
     f.close()
 """
 
+
+class Client:
+    def __init__(self, id):
+        self.__id = id
+        self.__requests = []
+        self.__computers = set()
+
+    def get_id(self):
+        return self.__id
+
+    def get_computers(self):
+        return self.__computers
+
+    def add_new_request(self, request):
+        self.__requests.append(request)
+
+    def add_new_computer(self, computer):
+        self.__computers.add(computer)
+
+    def get_computer_at_i(self, i):
+        return self.__computers[i]
+
+    def get_request_at_i(self, i):
+        return self.__requests.__getitem__(i)
+
+
+class Computer:
+    def __init__(self, path, ip, index=1):
+        self.__ip = ip
+        self.__path = path
+        self.__index = index
+
+    def get_path(self):
+        return self.__path
+
+    def get_index(self):
+        return self.__index
+
+    def decrease_index(self, num):
+        self.__index += num
+
+    def __eq__(self, other):
+        if not isinstance(other, Computer):
+            return NotImplemented
+        return self.__path == other.get_path() and self.__ip == other.get_path()
+
+    def __hash__(self):
+        return hash((self.__ip, self.__path, self.__index))
+
+
 if __name__ == '__main__':
     path_to_DB = os.path.join("./", "DB/")
     os.makedirs(os.path.dirname(path_to_DB), exist_ok=True)
@@ -86,6 +136,7 @@ if __name__ == '__main__':
     server.bind(('', my_port))
     server.listen(5)
     util = utils.Utils('server', None)
+    clients = {}
     while True:
         client_socket, client_address = server.accept()
         util.set_socket(client_socket)
@@ -105,6 +156,19 @@ if __name__ == '__main__':
                 os.mkdir(os.path.join(path_to_DB, client_id))
                 util.set_id(client_id)
                 client_socket.send(bytes(client_id, 'utf-8'))
+                clients[client_id] = Client(client_id)
+                clients[client_id].add_new_request(message_dict)
+                clients[client_id].add_new_computer(Computer(message_dict['path'], client_address[0]))
+            if 'exists client' in message_dict['action']:
+                if not message_dict['id'] in clients.keys():
+                    raise "client not exists"
+                """dir_name = os.walk(os.path.join('.' + os.path.sep + 'DB', message_dict['id']))
+                dir_name = dir_name[1]
+                dir_name = dir_name[0]"""
+                clients[message_dict['id']].add_new_request(message_dict)
+                clients[message_dict['id']].add_new_computer(Computer(message_dict['path'], client_address[0]))
+                util.set_rel_folder_name(clients[message_dict['id']].get_request_at_i(0)['path'])
+                util.upload_dir_to_server(os.path.join('.' + os.path.sep + 'DB', message_dict['id'], clients[message_dict['id']].get_request_at_i(0)['path']))
             if 'upload file' in message_dict['action']:
                 util.get_file(message_dict)
             if 'remove file' in message_dict['action']:

@@ -24,7 +24,7 @@ class Watcher:
             while True:
                 time.sleep(1)
         except KeyboardInterrupt:
-            print('stop')
+            print('stop Watcher line 27')
             self.observer.stop()
         self.observer.join()
 
@@ -150,6 +150,31 @@ if __name__ == '__main__':
     if len(sys.argv) == 6:
         my_id = sys.argv[5]
         util.set_id(my_id)
+        s, d, f = util.get_size_of_dir(path_to_folder)
+        util.set_rel_folder_name(rel_folder_name)
+        message = util.generate_message('exists client', path_to_folder, 0, 0, 1)
+        util.get_socket().send(message)
+        length = util.recv_all(16)
+        length = length.decode('utf-8')
+        message = util.recv_all(int(length))
+        message_dict = util.parse_message(message)
+        num_of_requests = int(message_dict['num_of_requests'])
+        for i in range(num_of_requests):
+            if 'upload file' in message_dict['action']:
+                util.get_file(message_dict)
+            if 'remove file' in message_dict['action']:
+                util.remove_file(message_dict)
+            elif 'upload path' in message_dict['action']:
+                util.get_path(message_dict)
+            if i == num_of_requests - 1:
+                break
+            length = util.recv_all(16)
+            if not length:
+                break
+            length = length.decode('utf-8')
+            message = util.recv_all(int(length))
+            message_dict = util.parse_message(message)
+
         # create new folder and get all the files from the server.
     else:
         s, d, f = util.get_size_of_dir(path_to_folder)
