@@ -151,7 +151,7 @@ if __name__ == '__main__':
         my_id = sys.argv[5]
         util.set_id(my_id)
         s, d, f = util.get_size_of_dir(path_to_folder)
-        util.set_rel_folder_name(rel_folder_name)
+        util.set_rel_folder_name(path_to_folder)
         message = util.generate_message('exists client', path_to_folder, 0, 0, 1)
         util.get_socket().send(message)
         length = util.recv_all(16)
@@ -179,7 +179,7 @@ if __name__ == '__main__':
     else:
         s, d, f = util.get_size_of_dir(path_to_folder)
         # f = num of files and subdirs + new client + rootdir
-        message = util.generate_message('new client', path_to_folder, d, s, f + 2)
+        message = util.generate_message('new client', path_to_folder, d, s, f + 1)
         util.get_socket().send(message)
         my_id = util.get_socket().recv(128).decode('utf-8')
         util.set_id(my_id)

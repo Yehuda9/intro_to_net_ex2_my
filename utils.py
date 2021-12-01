@@ -11,11 +11,15 @@ from watchdog.observers import Observer
 
 class Utils:
 
-    def __init__(self, connection, s, rel_folder_name='', id='0'):
+    def __init__(self, connection, s, rel_folder_name='', id='0', computer_id=0):
+        self.__computer_id = computer_id
         self.__connection = connection
         self.__socket = s
         self.__rel_folder_name = rel_folder_name
         self.__id = id
+
+    def set_computer_id(self, computer_id):
+        self.__computer_id = computer_id
 
     def is_client(self):
         if self.__connection == 'client':
@@ -115,10 +119,15 @@ class Utils:
 
     def generate_message(self, action, path='', size_of_dirs=0, size_of_data=0, num_of_requests=1):
         if action == 'upload file' or action == 'upload path' or action == 'remove file':
-            r_path = path.split(self.__rel_folder_name, 1)[1].lstrip(os.path.sep)
-            path = os.path.join(self.__rel_folder_name.split(os.path.sep)[-1], r_path)
+            try:
+                r_path = path.split(self.__rel_folder_name, 1)[1].lstrip(os.path.sep)
+            except:
+                r_path = path.split(self.__id, 1)[1].lstrip(os.path.sep)
+            path = r_path
+            # path = os.path.join(self.__rel_folder_name.split(os.path.sep)[-1], r_path)
         elif action == 'new client':
-            path = os.path.split(path)[-1]
+            pass
+            # path = os.path.split(path)[-1]
             # path = rel_folder_name
         m = "action:" + action + '\n' + 'id:' + self.__id + '\n' + 'path:' + path + '\n' + 'size_of_dirs:' + str(
             size_of_dirs) + '\n' + 'size_of_data:' + str(size_of_data) + '\n' + 'num_of_requests:' + str(
@@ -148,13 +157,16 @@ class Utils:
                 self.get_socket().send(b)
 
     def upload_dir_to_server(self, path):
-        self.get_socket().send(self.generate_message('upload path', path, 0, 0, self.get_size_of_dir(path)[2] + 1))
+        # self.get_socket().send(self.generate_message('upload path', path, 0, 0, self.get_size_of_dir(path)[2] + 1))
+        n = self.get_size_of_dir(path)[2]
         for path, dirs, files in os.walk(path):
             for d in dirs:
                 path_to_file = os.path.join(path, d)
                 # print(path_to_file)
-                self.upload_path(path_to_file)
+                self.upload_path(path_to_file, n)
+                n -= 1
             for file in files:
                 path_to_file = os.path.join(path, file)
                 # print(path_to_file)
-                self.upload_file(path_to_file)
+                self.upload_file(path_to_file, n)
+                n -= 1
