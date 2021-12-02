@@ -1,8 +1,5 @@
-import os
 import random
 import string
-import sys
-from socket import socket, AF_INET, SOCK_STREAM
 
 import utils
 from utils import *
@@ -104,12 +101,15 @@ class Computer:
     def get_id(self):
         return self.__id
 
+    def get_requests(self):
+        return self.__requests
+
     def add_new_request(self, req):
         self.__requests.append(req)
 
-    def remove_request(self):
+    def clear_requests(self):
         if len(self.__requests) > 0:
-            self.__requests.pop(0)
+            self.__requests.clear()
 
     def __eq__(self, other):
         if not isinstance(other, Computer):
@@ -143,7 +143,8 @@ if __name__ == '__main__':
         num_of_requests = int(message_dict['num_of_requests'])
         for i in range(num_of_requests):
             # add new request to computer
-            if message_dict['action'] != 'new client' and message_dict['action'] != 'exists client':
+            if message_dict['action'] != 'new client' and message_dict['action'] != 'exists client' and \
+                    message_dict['action'] != 'requests_updates':
                 client = clients[message_dict['id']]
                 computer = client.get_computer_at_i(message_dict['computer_id'])
                 computer.add_new_request(message_dict)
@@ -172,17 +173,27 @@ if __name__ == '__main__':
                 client_socket.send(bytes(computer_id, 'utf-8'))
                 computer = Computer(computer_id)
                 clients[message_dict['id']].add_new_computer(computer)
-                util.set_rel_folder_name(clients[message_dict['id']].get_request_at_i(0)['path'])
+                # util.set_rel_folder_name(clients[message_dict['id']].get_request_at_i(0)['path'])
                 util.upload_dir_to_server(os.path.join('.' + os.path.sep + 'DB', message_dict['id']))
             if 'upload file' in message_dict['action']:
                 util.get_file(message_dict)
             if 'remove file' in message_dict['action']:
                 util.remove_file(message_dict)
-            elif 'upload path' in message_dict['action']:
+            if 'upload path' in message_dict['action']:
                 # print('upload path!!!!!!!!!!')
                 util.get_path(message_dict)
-            # print(i, num_of_requests)
-
+            if 'requests_updates' in message_dict['action']:
+                comp = clients[message_dict['id']].get_computer_at_i(message_dict['computer_id'])
+                comp.get_requests()[0]['num_of_requests'] = len(comp.get_requests())
+                for req in comp.get_requests():
+                    if req['action'] == 'upload file':
+                        util.upload_file(req['path'], req['num_of_requests'])
+                    if req['action'] == 'remove file':
+                        util.send_remove_file(req['path'], req['num_of_requests'])
+                    if req['action'] == 'upload path':
+                        util.upload_path(req['path'], req['num_of_requests'])
+                comp.clear_requests()
+                # print(i, num_of_requests)
             if i == num_of_requests - 1:
                 break
             length = util.recv_all(16)

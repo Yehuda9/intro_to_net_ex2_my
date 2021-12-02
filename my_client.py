@@ -1,14 +1,12 @@
 import os
 import sys
 import time
-from os.path import getsize
 from socket import socket, AF_INET, SOCK_STREAM
 
-import utils
-import watchdog
-from utils import Utils
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
+
+import utils
 
 
 class Watcher:
@@ -19,7 +17,8 @@ class Watcher:
     def requests_updates(self):
         util.set_socket(socket(AF_INET, SOCK_STREAM))
         util.get_socket().connect((server_IP, server_port))
-        m = util.generate_message
+        m = util.generate_message('requests_updates')
+        util.get_socket().send(m)
 
     def run(self):
         event_handler = Handler()
@@ -32,7 +31,7 @@ class Watcher:
                 i += 1
                 if i == 5:
                     i = 0
-                    requests_updates()
+                    self.requests_updates()
         except KeyboardInterrupt:
             print('stop Watcher line 27')
             self.observer.stop()
