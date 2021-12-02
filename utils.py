@@ -65,6 +65,7 @@ class Utils:
                 print('error parsing')
         if self.__connection == 'client':
             d['path'] = os.path.join(self.__rel_folder_name, d['path'])
+            # print(d['path'])
         elif not d['action'] == 'new client':
             d['path'] = os.path.join(os.getcwd(), 'DB', d['id'], d['path'])
         print(d)

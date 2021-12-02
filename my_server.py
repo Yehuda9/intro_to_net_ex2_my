@@ -92,6 +92,11 @@ class Client:
     def get_computer_at_i(self, comp_id):
         return self.__computers[comp_id]
 
+    def add_request(self, comp_id, req):
+        for comp in self.__computers.values():
+            if comp.get_id() != comp_id:
+                comp.add_new_request(req)
+
 
 class Computer:
     def __init__(self, c_id):
@@ -146,8 +151,8 @@ if __name__ == '__main__':
             if message_dict['action'] != 'new client' and message_dict['action'] != 'exists client' and \
                     message_dict['action'] != 'requests_updates':
                 client = clients[message_dict['id']]
-                computer = client.get_computer_at_i(message_dict['computer_id'])
-                computer.add_new_request(message_dict)
+                # computer = client.get_computer_at_i(message_dict['computer_id'])
+                client.add_request(message_dict['computer_id'], message_dict)
             print(message_dict['action'])
             # handle request from client
             if 'new client' in message_dict['action']:
@@ -184,7 +189,10 @@ if __name__ == '__main__':
                 util.get_path(message_dict)
             if 'requests_updates' in message_dict['action']:
                 comp = clients[message_dict['id']].get_computer_at_i(message_dict['computer_id'])
-                comp.get_requests()[0]['num_of_requests'] = len(comp.get_requests())
+                try:
+                    comp.get_requests()[0]['num_of_requests'] = len(comp.get_requests())
+                except:
+                    pass
                 for req in comp.get_requests():
                     if req['action'] == 'upload file':
                         util.upload_file(req['path'], req['num_of_requests'])

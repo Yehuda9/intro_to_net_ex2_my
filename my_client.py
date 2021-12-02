@@ -3,22 +3,57 @@ import sys
 import time
 from socket import socket, AF_INET, SOCK_STREAM
 
+import watchdog
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 import utils
 
 
+class PausingObserver(watchdog.observers.Observer):
+    def __init__(self, *args):
+        Observer.__init__(self, *args)
+        self._is_paused = False
+
+    def dispatch_events(self, *args, **kwargs):
+        if not getattr(self, '_is_paused', False):
+            super(PausingObserver, self).dispatch_events(*args, **kwargs)
+
+    def pause(self):
+        pass
+
+    def resume(self):
+        time.sleep(self.timeout)  # allow interim events to be queued
+        self.event_queue.queue.clear()
+        self._is_paused = False
+
+    """@contextlib.contextmanager
+    def ignore_events(self):
+        self.pause()
+        yield
+        self.resume()
+"""
+
+
 class Watcher:
 
     def __init__(self):
-        self.observer = Observer()
+        self.observer = PausingObserver()
 
     def requests_updates(self):
         util.set_socket(socket(AF_INET, SOCK_STREAM))
+        print('connect requests_updates')
         util.get_socket().connect((server_IP, server_port))
         m = util.generate_message('requests_updates')
         util.get_socket().send(m)
+        handle_req()
+        util.get_socket().close()
+
+    def stop(self):
+        self.observer.pause()
+
+    def start(self):
+        self.observer.resume()
 
     def run(self):
         event_handler = Handler()
@@ -41,6 +76,7 @@ class Watcher:
 class Handler(FileSystemEventHandler):
     def on_created(self, event):
         util.set_socket(socket(AF_INET, SOCK_STREAM))
+        print('connect on_created')
         util.get_socket().connect((server_IP, server_port))
         print("Received created event - %s." % event.src_path)
         if os.path.isdir(event.src_path):
@@ -54,6 +90,7 @@ class Handler(FileSystemEventHandler):
         print("Received modified event - %s." % event.src_path)
         if not os.path.isdir(event.src_path):
             util.set_socket(socket(AF_INET, SOCK_STREAM))
+            print('connect on_modified')
             util.get_socket().connect((server_IP, server_port))
             util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2] * 2)
             util.upload_file(event.src_path)
@@ -61,6 +98,7 @@ class Handler(FileSystemEventHandler):
 
     def on_deleted(self, event):
         util.set_socket(socket(AF_INET, SOCK_STREAM))
+        print('connect on_deleted')
         util.get_socket().connect((server_IP, server_port))
         print("Received delete event - %s." % event.src_path)
         util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2])
@@ -68,6 +106,7 @@ class Handler(FileSystemEventHandler):
 
     def on_moved(self, event):
         util.set_socket(socket(AF_INET, SOCK_STREAM))
+        print('connect on_moved')
         util.get_socket().connect((server_IP, server_port))
         print("Received moved event - %s." % event.src_path)
         print("Received moved event - %s." % event.dest_path)
@@ -147,6 +186,41 @@ def upload_file(server_socket, path_to_file, num_of_requests=1):
             upload_file(server_socket, path_to_file)
 
 """
+
+
+def handle_req():
+    length = util.recv_all(16)
+    if length is not None:
+        length = length.decode('utf-8')
+        message = util.recv_all(int(length))
+        message_dict = util.parse_message(message)
+        num_of_requests = int(message_dict['num_of_requests'])
+        for i in range(num_of_requests):
+            try:
+                w.stop()
+            except:
+                pass
+            if 'upload file' in message_dict['action']:
+                util.get_file(message_dict)
+            if 'remove file' in message_dict['action']:
+                util.remove_file(message_dict)
+            elif 'upload path' in message_dict['action']:
+                util.get_path(message_dict)
+            try:
+                # w = Watcher()
+                w.start()
+            except:
+                pass
+            if i == num_of_requests - 1:
+                break
+            length = util.recv_all(16)
+            if not length:
+                break
+            length = length.decode('utf-8')
+            message = util.recv_all(int(length))
+            message_dict = util.parse_message(message)
+
+
 if __name__ == '__main__':
     server_IP = sys.argv[1]
     server_port = int(sys.argv[2])
@@ -154,7 +228,7 @@ if __name__ == '__main__':
     rel_folder_name = path_to_folder.split(os.sep)[-1]
     time_between_syncs = sys.argv[4]
     my_id = '0'
-    util = utils.Utils('client', socket(AF_INET, SOCK_STREAM), rel_folder_name, my_id)
+    util = utils.Utils('client', socket(AF_INET, SOCK_STREAM), path_to_folder, my_id)
     util.get_socket().connect((server_IP, server_port))
     if len(sys.argv) == 6:
         my_id = sys.argv[5]
@@ -165,26 +239,7 @@ if __name__ == '__main__':
         util.get_socket().send(message)
         computer_id = util.get_socket().recv(64).decode('utf-8')
         util.set_client_computer_id(computer_id)
-        length = util.recv_all(16)
-        length = length.decode('utf-8')
-        message = util.recv_all(int(length))
-        message_dict = util.parse_message(message)
-        num_of_requests = int(message_dict['num_of_requests'])
-        for i in range(num_of_requests):
-            if 'upload file' in message_dict['action']:
-                util.get_file(message_dict)
-            if 'remove file' in message_dict['action']:
-                util.remove_file(message_dict)
-            elif 'upload path' in message_dict['action']:
-                util.get_path(message_dict)
-            if i == num_of_requests - 1:
-                pass
-            length = util.recv_all(16)
-            if not length:
-                break
-            length = length.decode('utf-8')
-            message = util.recv_all(int(length))
-            message_dict = util.parse_message(message)
+        handle_req()
 
         # create new folder and get all the files from the server.
     else:
