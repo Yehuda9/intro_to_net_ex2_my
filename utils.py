@@ -11,15 +11,18 @@ from watchdog.observers import Observer
 
 class Utils:
 
-    def __init__(self, connection, s, rel_folder_name='', id='0', computer_id=0):
-        self.__computer_id = computer_id
+    def __init__(self, connection, s, rel_folder_name='', id='0', comp_id='0'):
+        self.__client_computer_id = comp_id
         self.__connection = connection
         self.__socket = s
         self.__rel_folder_name = rel_folder_name
         self.__id = id
 
-    def set_computer_id(self, computer_id):
-        self.__computer_id = computer_id
+    def set_client_computer_id(self, comp_id):
+        self.__client_computer_id = comp_id
+
+    def get_client_computer_id(self):
+        return self.__client_computer_id
 
     def is_client(self):
         if self.__connection == 'client':
@@ -131,7 +134,7 @@ class Utils:
             # path = rel_folder_name
         m = "action:" + action + '\n' + 'id:' + self.__id + '\n' + 'path:' + path + '\n' + 'size_of_dirs:' + str(
             size_of_dirs) + '\n' + 'size_of_data:' + str(size_of_data) + '\n' + 'num_of_requests:' + str(
-            num_of_requests)
+            num_of_requests) + '\n' + 'computer_id:' + self.__client_computer_id
         m = bytes(m, 'utf-8')
         size = bytes(str(len(m)).zfill(16), 'utf-8')
         to_send = size + m

@@ -79,9 +79,8 @@ from utils import *
 
 
 class Client:
-    def __init__(self, id):
-        self.__id = id
-        self.__requests = []
+    def __init__(self, c_id):
+        self.__id = c_id
         self.__computers = {}
 
     def get_id(self):
@@ -90,45 +89,35 @@ class Client:
     def get_computers(self):
         return self.__computers
 
-    def add_new_request(self, request):
-        self.__requests.append(request)
+    def add_new_computer(self, comp):
+        self.__computers[comp.get_id()] = comp
 
-    def add_new_computer(self, computer):
-        self.__computers[computer.get_id()] = computer
-
-    def get_computer_at_i(self, i):
-        return self.__computers[i]
-
-    def get_request_at_i(self, i):
-        return self.__requests.__getitem__(i)
+    def get_computer_at_i(self, comp_id):
+        return self.__computers[comp_id]
 
 
 class Computer:
-    def __init__(self, path, ip, id, index=1):
-        self.__id = id
-        self.__ip = ip
-        self.__path = path
-        self.__index = index
+    def __init__(self, c_id):
+        self.__id = c_id
+        self.__requests = []
 
     def get_id(self):
         return self.__id
 
-    def get_path(self):
-        return self.__path
+    def add_new_request(self, req):
+        self.__requests.append(req)
 
-    def get_index(self):
-        return self.__index
-
-    def decrease_index(self, num):
-        self.__index += num
+    def remove_request(self):
+        if len(self.__requests) > 0:
+            self.__requests.pop(0)
 
     def __eq__(self, other):
         if not isinstance(other, Computer):
             return NotImplemented
-        return self.__path == other.get_path() and self.__ip == other.get_path()
+        return self.__id == other.get_id()
 
     def __hash__(self):
-        return hash((self.__ip, self.__path, self.__index))
+        return hash(self.__id)
 
 
 if __name__ == '__main__':
@@ -151,14 +140,15 @@ if __name__ == '__main__':
         # print(length)
         message = util.recv_all(int(length))
         message_dict = util.parse_message(message)
-        if 'new client' not in message_dict['action']:
-            clients[message_dict['id']].add_new_request(message_dict)
-            computer = Computer(message_dict['path'], client_address[0])
-            if computer not in clients[message_dict['id']]:
-                clients[message_dict['id']].add_new_computer(computer)
         num_of_requests = int(message_dict['num_of_requests'])
         for i in range(num_of_requests):
+            # add new request to computer
+            if message_dict['action'] != 'new client' and message_dict['action'] != 'exists client':
+                client = clients[message_dict['id']]
+                computer = client.get_computer_at_i(message_dict['computer_id'])
+                computer.add_new_request(message_dict)
             print(message_dict['action'])
+            # handle request from client
             if 'new client' in message_dict['action']:
                 client_id = ''.join(
                     random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(128))
@@ -169,14 +159,19 @@ if __name__ == '__main__':
                     random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(64))
                 client_socket.send(bytes(computer_id, 'utf-8'))
                 clients[client_id] = Client(client_id)
-                clients[client_id].add_new_request(message_dict)
-                clients[client_id].add_new_computer(Computer(message_dict['path'], client_address[0], computer_id))
+                computer = Computer(computer_id)
+                clients[client_id].add_new_computer(computer)
             if 'exists client' in message_dict['action']:
                 if not message_dict['id'] in clients.keys():
                     raise "client not exists"
                 """dir_name = os.walk(os.path.join('.' + os.path.sep + 'DB', message_dict['id']))
                 dir_name = dir_name[1]
                 dir_name = dir_name[0]"""
+                computer_id = ''.join(
+                    random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(64))
+                client_socket.send(bytes(computer_id, 'utf-8'))
+                computer = Computer(computer_id)
+                clients[message_dict['id']].add_new_computer(computer)
                 util.set_rel_folder_name(clients[message_dict['id']].get_request_at_i(0)['path'])
                 util.upload_dir_to_server(os.path.join('.' + os.path.sep + 'DB', message_dict['id']))
             if 'upload file' in message_dict['action']:
@@ -187,6 +182,7 @@ if __name__ == '__main__':
                 # print('upload path!!!!!!!!!!')
                 util.get_path(message_dict)
             # print(i, num_of_requests)
+
             if i == num_of_requests - 1:
                 break
             length = util.recv_all(16)

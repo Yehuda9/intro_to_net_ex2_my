@@ -16,13 +16,23 @@ class Watcher:
     def __init__(self):
         self.observer = Observer()
 
+    def requests_updates(self):
+        util.set_socket(socket(AF_INET, SOCK_STREAM))
+        util.get_socket().connect((server_IP, server_port))
+        m = util.generate_message
+
     def run(self):
         event_handler = Handler()
         self.observer.schedule(event_handler, path_to_folder, recursive=True)
         self.observer.start()
         try:
+            i = 0
             while True:
                 time.sleep(1)
+                i += 1
+                if i == 5:
+                    i = 0
+                    requests_updates()
         except KeyboardInterrupt:
             print('stop Watcher line 27')
             self.observer.stop()
@@ -62,7 +72,7 @@ class Handler(FileSystemEventHandler):
         util.get_socket().connect((server_IP, server_port))
         print("Received moved event - %s." % event.src_path)
         print("Received moved event - %s." % event.dest_path)
-        num_of_requests = util.get_size_of_dir(event.src_path)[2]+1
+        num_of_requests = util.get_size_of_dir(event.src_path)[2] + 1
         # upload_file(server_socket, event.dest_path, get_size_of_dir(event.src_path)[2])
         if os.path.isdir(event.dest_path):
             util.send_remove_file(event.src_path, num_of_requests)
@@ -154,6 +164,8 @@ if __name__ == '__main__':
         util.set_rel_folder_name(path_to_folder)
         message = util.generate_message('exists client', path_to_folder, 0, 0, 1)
         util.get_socket().send(message)
+        computer_id = util.get_socket().recv(64).decode('utf-8')
+        util.set_client_computer_id(computer_id)
         length = util.recv_all(16)
         length = length.decode('utf-8')
         message = util.recv_all(int(length))
@@ -167,7 +179,7 @@ if __name__ == '__main__':
             elif 'upload path' in message_dict['action']:
                 util.get_path(message_dict)
             if i == num_of_requests - 1:
-                break
+                pass
             length = util.recv_all(16)
             if not length:
                 break
@@ -183,6 +195,8 @@ if __name__ == '__main__':
         util.get_socket().send(message)
         my_id = util.get_socket().recv(128).decode('utf-8')
         util.set_id(my_id)
+        computer_id = util.get_socket().recv(64).decode('utf-8')
+        util.set_client_computer_id(computer_id)
         # print(my_id)
         util.upload_dir_to_server(path_to_folder)
     w = Watcher()
