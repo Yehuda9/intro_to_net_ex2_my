@@ -43,6 +43,7 @@ class Watcher:
         self.__in_req = False
 
     def requests_updates(self):
+        self.event_handler.set_in_event(True)
         self.__in_req = True
         m = util.generate_message('requests_updates')
         try:
@@ -56,6 +57,7 @@ class Watcher:
             handle_req()
             util.get_socket().close()
             self.__in_req = False
+        self.event_handler.set_in_event(False)
 
     def stop(self):
         self.observer.pause()
@@ -255,7 +257,6 @@ def upload_file(server_socket, path_to_file, num_of_requests=1):
 
 
 def handle_req():
-    w.event_handler.set_in_event(True)
     length = util.recv_all(16)
     if length is not None:
         length = length.decode('utf-8')
@@ -277,7 +278,6 @@ def handle_req():
             length = length.decode('utf-8')
             message = util.recv_all(int(length))
             message_dict = util.parse_message(message)
-    w.event_handler.set_in_event(False)
 
 
 if __name__ == '__main__':
