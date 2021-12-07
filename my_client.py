@@ -103,7 +103,7 @@ class Handler(FileSystemEventHandler):
                 return False
             except OSError as e:
                 return True
-        return True
+        return False
 
     def on_created(self, event):
         self.__in_event = True
