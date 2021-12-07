@@ -174,7 +174,7 @@ class Utils:
         _message = self.generate_message('upload file', path_to_file, 0, size, num_of_requests)
         # print('file size: ', os.path.getsize(path_to_file))
         self.get_socket().send(_message)
-        f = ''
+        f = None
         try:
             f = open(path_to_file, 'rb')
             b = f.read()
@@ -185,8 +185,10 @@ class Utils:
         except PermissionError as e:
             pass
         finally:
-            if not f.closed:
+            try:
                 f.close()
+            except:
+                pass
 
     def upload_dir_to_server(self, path):
         # self.get_socket().send(self.generate_message('upload path', path, 0, 0, self.get_size_of_dir(path)[2] + 1))
