@@ -39,8 +39,10 @@ class Watcher:
 
     def __init__(self):
         self.observer = PausingObserver()
+        self.__in_req = False
 
     def requests_updates(self):
+        self.__in_req = True
         util.set_socket(socket(AF_INET, SOCK_STREAM))
         print('connect requests_updates')
         util.get_socket().connect((server_IP, server_port))
@@ -48,6 +50,8 @@ class Watcher:
         util.get_socket().send(m)
         handle_req()
         util.get_socket().close()
+        self.__in_req = False
+
 
     def stop(self):
         self.observer.pause()
@@ -72,7 +76,7 @@ class Watcher:
                                 and copy[a][0] + 1 < time.time():
                             util.get_ignore_wd().pop(a)
                     print(event_handler.get_in_event(), "!!!!!!!!!!!!!!!!!!")
-                    if not event_handler.get_in_event():
+                    if not event_handler.get_in_event() or not self.__in_req:
                         self.requests_updates()
         except KeyboardInterrupt:
             print('stop Watcher line 27')
