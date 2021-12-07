@@ -52,7 +52,6 @@ class Watcher:
         util.get_socket().close()
         self.__in_req = False
 
-
     def stop(self):
         self.observer.pause()
 
@@ -88,15 +87,21 @@ class Handler(FileSystemEventHandler):
     def __init__(self):
         self.__in_event = False
 
+    def is_start_with(self, p):
+        for key in util.get_ignore_wd().keys():
+            if key.startswith(p):
+                return True
+        return False
+
     def get_in_event(self):
         return self.__in_event
 
     def on_created(self, event):
         self.__in_event = True
         print(util.get_ignore_wd())
-        if event.src_path not in util.get_ignore_wd().keys() or (util.get_ignore_wd()[event.src_path][1] == 'close'
-                                                                 and util.get_ignore_wd()[event.src_path][
-                                                                     0] + 1 < time.time()):
+        if not self.is_start_with(event.src_path) or (util.get_ignore_wd()[event.src_path][1] == 'close'
+                                                      and util.get_ignore_wd()[event.src_path][
+                                                          0] + 1 < time.time()):
             util.set_socket(socket(AF_INET, SOCK_STREAM))
             print('connect on_created')
             util.get_socket().connect((server_IP, server_port))
