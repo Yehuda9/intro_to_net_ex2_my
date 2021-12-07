@@ -112,7 +112,7 @@ class Handler(FileSystemEventHandler):
     def on_created(self, event):
         self.__in_event = True
         print(util.get_ignore_wd())
-        self.is_open(event.src_path)
+        # self.is_open(event.src_path)
         if not self.is_start_with(event.src_path) or (
                 event.src_path in util.get_ignore_wd().keys() and util.get_ignore_wd()[event.src_path][1] == 'close'
                 and util.get_ignore_wd()[event.src_path][
@@ -132,7 +132,7 @@ class Handler(FileSystemEventHandler):
     def on_modified(self, event):
         self.__in_event = True
         print(util.get_ignore_wd())
-        self.is_open(event.src_path)
+        #self.is_open(event.src_path)
         if event.src_path not in util.get_ignore_wd().keys() or (util.get_ignore_wd()[event.src_path][1] == 'close'
                                                                  and util.get_ignore_wd()[event.src_path][
                                                                      0] + 1 < time.time()):
