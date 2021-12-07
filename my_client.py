@@ -66,6 +66,11 @@ class Watcher:
                 i += 1
                 if i == 5:
                     i = 0
+                    copy = util.get_ignore_wd().copy()
+                    for a in copy.keys():
+                        if copy[a][1] == 'close' \
+                                and copy[a][0] + 1 < time.time():
+                            util.get_ignore_wd().pop(a)
                     self.requests_updates()
         except KeyboardInterrupt:
             print('stop Watcher line 27')
@@ -75,34 +80,45 @@ class Watcher:
 
 class Handler(FileSystemEventHandler):
     def on_created(self, event):
-        util.set_socket(socket(AF_INET, SOCK_STREAM))
-        print('connect on_created')
-        util.get_socket().connect((server_IP, server_port))
-        print("Received created event - %s." % event.src_path)
-        if os.path.isdir(event.src_path):
-            # upload_dir_to_server(server_socket, event.src_path)
-            util.upload_path(event.src_path, util.get_size_of_dir(event.src_path)[2])
-        else:
-            util.upload_file(event.src_path)
-        util.get_socket().close()
-
-    def on_modified(self, event):
-        print("Received modified event - %s." % event.src_path)
-        if not os.path.isdir(event.src_path):
+        print(util.get_ignore_wd())
+        if event.src_path not in util.get_ignore_wd().keys() or (util.get_ignore_wd()[event.src_path][1] == 'close'
+                                                                 and util.get_ignore_wd()[event.src_path][
+                                                                     0] + 1 < time.time()):
             util.set_socket(socket(AF_INET, SOCK_STREAM))
-            print('connect on_modified')
+            print('connect on_created')
             util.get_socket().connect((server_IP, server_port))
-            util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2] * 2)
-            util.upload_file(event.src_path)
+            print("Received created event - %s." % event.src_path)
+            if os.path.isdir(event.src_path):
+                # upload_dir_to_server(server_socket, event.src_path)
+                util.upload_path(event.src_path, util.get_size_of_dir(event.src_path)[2])
+            else:
+                util.upload_file(event.src_path)
             util.get_socket().close()
 
+    def on_modified(self, event):
+        print(util.get_ignore_wd())
+        if event.src_path not in util.get_ignore_wd().keys() or (util.get_ignore_wd()[event.src_path][1] == 'close'
+                                                                 and util.get_ignore_wd()[event.src_path][0] + 1 < time.time()):
+            print("Received modified event - %s." % event.src_path)
+            if not os.path.isdir(event.src_path):
+                util.set_socket(socket(AF_INET, SOCK_STREAM))
+                print('connect on_modified')
+                util.get_socket().connect((server_IP, server_port))
+                util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2] * 2)
+                util.upload_file(event.src_path)
+                util.get_socket().close()
+
     def on_deleted(self, event):
-        util.set_socket(socket(AF_INET, SOCK_STREAM))
-        print('connect on_deleted')
-        util.get_socket().connect((server_IP, server_port))
-        print("Received delete event - %s." % event.src_path)
-        util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2])
-        util.get_socket().close()
+        print(util.get_ignore_wd())
+        if event.src_path not in util.get_ignore_wd().keys() or (util.get_ignore_wd()[event.src_path][1] == 'close'
+                                                                 and util.get_ignore_wd()[event.src_path][
+                                                                     0] + 1 < time.time()):
+            util.set_socket(socket(AF_INET, SOCK_STREAM))
+            print('connect on_deleted')
+            util.get_socket().connect((server_IP, server_port))
+            print("Received delete event - %s." % event.src_path)
+            util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2])
+            util.get_socket().close()
 
     def on_moved(self, event):
         util.set_socket(socket(AF_INET, SOCK_STREAM))
@@ -253,5 +269,6 @@ if __name__ == '__main__':
         util.set_client_computer_id(computer_id)
         # print(my_id)
         util.upload_dir_to_server(path_to_folder)
+    util.get_ignore_wd().clear()
     w = Watcher()
     w.run()

@@ -1,12 +1,7 @@
 import os
-import sys
 import time
-from os.path import getsize
-from socket import socket, AF_INET, SOCK_STREAM
 
-import watchdog
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
+from os.path import getsize
 
 
 class Utils:
@@ -17,6 +12,10 @@ class Utils:
         self.__socket = s
         self.__rel_folder_name = rel_folder_name
         self.__id = id
+        self.__ignore_wd = {}
+
+    def get_ignore_wd(self):
+        return self.__ignore_wd
 
     def set_client_computer_id(self, comp_id):
         self.__client_computer_id = comp_id
@@ -85,6 +84,8 @@ class Utils:
                 os.rmdir(root)
 
     def remove_file(self, _message_dict):
+        if self.__connection == 'client':
+            self.__ignore_wd[_message_dict['path']] = (time.time(), 'open')
         if os.path.isdir(_message_dict['path']):
             # pass
             self.remove_dir(_message_dict['path'])
@@ -93,20 +94,31 @@ class Utils:
                 os.remove(_message_dict['path'])
             except FileNotFoundError:
                 pass
+        if self.__connection == 'client':
+            self.__ignore_wd[_message_dict['path']] = (time.time(), 'close')
 
     def get_path(self, _message_dict):
+        if self.__connection == 'client':
+            self.__ignore_wd[_message_dict['path']] = (time.time(), 'open')
         os.makedirs(_message_dict['path'], exist_ok=True)
+        if self.__connection == 'client':
+            self.__ignore_wd[_message_dict['path']] = (time.time(), 'close')
+        # self.__ignore_wd.remove(_message_dict['path'])
 
     def get_file(self, _message_dict):
+        d = self.recv_all(int(_message_dict['size_of_data']))
+        if self.__connection == 'client':
+            self.__ignore_wd[_message_dict['path']] = (time.time(), 'open')
         os.makedirs(os.path.dirname(_message_dict['path']), exist_ok=True)
         f = open(_message_dict['path'], 'wb')
-        # print("size of data: ", int(_message_dict['size_of_data']))
-        d = self.recv_all(int(_message_dict['size_of_data']))
-        if int(_message_dict['size_of_data']) != len(d):
-            print('read error!!!!!!!!!!!!!!!', int(_message_dict['size_of_data']) - len(d))
+        """if int(_message_dict['size_of_data']) != len(d):
+            print('read error!!!!!!!!!!!!!!!', int(_message_dict['size_of_data']) - len(d))"""
         f.write(d)
         # print('len(d): ', len(d))
         f.close()
+        if self.__connection == 'client':
+            self.__ignore_wd[_message_dict['path']] = (time.time(), 'close')
+        # self.__ignore_wd.remove(_message_dict['path'])
 
     def get_size_of_dir(self, path):
         s = 0
@@ -174,3 +186,6 @@ class Utils:
                 # print(path_to_file)
                 self.upload_file(path_to_file, n)
                 n -= 1
+        """self.__ignore_wd.clear()
+        print('!!!!!!!!!!!!!!!!!!!!!upload_dir_to_server!!!!!!!!!!!!!!!!!!!')
+        print(self.__ignore_wd)"""

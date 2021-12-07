@@ -1,7 +1,9 @@
 import random
 import string
-
+import sys
+from socket import socket, AF_INET, SOCK_STREAM
 import utils
+
 from utils import *
 
 """def recv_all(n):
