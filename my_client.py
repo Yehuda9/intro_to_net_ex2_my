@@ -38,19 +38,24 @@ class PausingObserver(watchdog.observers.Observer):
 class Watcher:
 
     def __init__(self):
+        self.event_handler = None
         self.observer = PausingObserver()
         self.__in_req = False
 
     def requests_updates(self):
         self.__in_req = True
-        util.set_socket(socket(AF_INET, SOCK_STREAM))
-        print('connect requests_updates')
-        util.get_socket().connect((server_IP, server_port))
         m = util.generate_message('requests_updates')
-        util.get_socket().send(m)
-        handle_req()
-        util.get_socket().close()
-        self.__in_req = False
+        try:
+            util.get_socket().send(m)
+            handle_req()
+        except Exception as e:
+            util.set_socket(socket(AF_INET, SOCK_STREAM))
+            print('connect requests_updates')
+            util.get_socket().connect((server_IP, server_port))
+            util.get_socket().send(m)
+            handle_req()
+            util.get_socket().close()
+            self.__in_req = False
 
     def stop(self):
         self.observer.pause()
@@ -59,8 +64,8 @@ class Watcher:
         self.observer.resume()
 
     def run(self):
-        event_handler = Handler()
-        self.observer.schedule(event_handler, path_to_folder, recursive=True)
+        self.event_handler = Handler()
+        self.observer.schedule(self.event_handler, path_to_folder, recursive=True)
         self.observer.start()
         try:
             i = 0
@@ -74,8 +79,8 @@ class Watcher:
                         if copy[a][1] == 'close' \
                                 and copy[a][0] + 1 < time.time():
                             util.get_ignore_wd().pop(a)
-                    print(event_handler.get_in_event(), "!!!!!!!!!!!!!!!!!!")
-                    if not event_handler.get_in_event() or not self.__in_req:
+                    print(self.event_handler.get_in_event(), "!!!!!!!!!!!!!!!!!!")
+                    if not self.event_handler.get_in_event() or not self.__in_req:
                         self.requests_updates()
         except KeyboardInterrupt:
             print('stop Watcher line 27')
@@ -86,6 +91,9 @@ class Watcher:
 class Handler(FileSystemEventHandler):
     def __init__(self):
         self.__in_event = False
+
+    def set_in_event(self, b):
+        self.__in_event = b
 
     def is_start_with(self, p):
         for key in util.get_ignore_wd().keys():
@@ -132,7 +140,7 @@ class Handler(FileSystemEventHandler):
     def on_modified(self, event):
         self.__in_event = True
         print(util.get_ignore_wd())
-        #self.is_open(event.src_path)
+        # self.is_open(event.src_path)
         if event.src_path not in util.get_ignore_wd().keys() or (util.get_ignore_wd()[event.src_path][1] == 'close'
                                                                  and util.get_ignore_wd()[event.src_path][
                                                                      0] + 1 < time.time()):
@@ -247,6 +255,7 @@ def upload_file(server_socket, path_to_file, num_of_requests=1):
 
 
 def handle_req():
+    w.event_handler.set_in_event(True)
     length = util.recv_all(16)
     if length is not None:
         length = length.decode('utf-8')
@@ -268,6 +277,7 @@ def handle_req():
             length = length.decode('utf-8')
             message = util.recv_all(int(length))
             message_dict = util.parse_message(message)
+    w.event_handler.set_in_event(False)
 
 
 if __name__ == '__main__':
