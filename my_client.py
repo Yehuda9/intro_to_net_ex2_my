@@ -96,9 +96,20 @@ class Handler(FileSystemEventHandler):
     def get_in_event(self):
         return self.__in_event
 
+    def is_open(self, p):
+        if os.path.exists(p):
+            try:
+                os.rename(p, p)
+                return False
+            except OSError as e:
+                return True
+        return True
+
     def on_created(self, event):
         self.__in_event = True
         print(util.get_ignore_wd())
+        if self.is_open(event.src_path):
+            return
         if not self.is_start_with(event.src_path) or (
                 event.src_path in util.get_ignore_wd().keys() and util.get_ignore_wd()[event.src_path][1] == 'close'
                 and util.get_ignore_wd()[event.src_path][
