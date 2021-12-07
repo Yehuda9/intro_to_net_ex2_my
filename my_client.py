@@ -71,7 +71,9 @@ class Watcher:
                         if copy[a][1] == 'close' \
                                 and copy[a][0] + 1 < time.time():
                             util.get_ignore_wd().pop(a)
-                    self.requests_updates()
+                    print(event_handler.get_in_event(), "!!!!!!!!!!!!!!!!!!")
+                    if not event_handler.get_in_event():
+                        self.requests_updates()
         except KeyboardInterrupt:
             print('stop Watcher line 27')
             self.observer.stop()
@@ -79,7 +81,14 @@ class Watcher:
 
 
 class Handler(FileSystemEventHandler):
+    def __init__(self):
+        self.__in_event = False
+
+    def get_in_event(self):
+        return self.__in_event
+
     def on_created(self, event):
+        self.__in_event = True
         print(util.get_ignore_wd())
         if event.src_path not in util.get_ignore_wd().keys() or (util.get_ignore_wd()[event.src_path][1] == 'close'
                                                                  and util.get_ignore_wd()[event.src_path][
@@ -94,11 +103,14 @@ class Handler(FileSystemEventHandler):
             else:
                 util.upload_file(event.src_path)
             util.get_socket().close()
+        self.__in_event = False
 
     def on_modified(self, event):
+        self.__in_event = True
         print(util.get_ignore_wd())
         if event.src_path not in util.get_ignore_wd().keys() or (util.get_ignore_wd()[event.src_path][1] == 'close'
-                                                                 and util.get_ignore_wd()[event.src_path][0] + 1 < time.time()):
+                                                                 and util.get_ignore_wd()[event.src_path][
+                                                                     0] + 1 < time.time()):
             print("Received modified event - %s." % event.src_path)
             if not os.path.isdir(event.src_path):
                 util.set_socket(socket(AF_INET, SOCK_STREAM))
@@ -107,8 +119,10 @@ class Handler(FileSystemEventHandler):
                 util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2] * 2)
                 util.upload_file(event.src_path)
                 util.get_socket().close()
+        self.__in_event = False
 
     def on_deleted(self, event):
+        self.__in_event = True
         print(util.get_ignore_wd())
         if event.src_path not in util.get_ignore_wd().keys() or (util.get_ignore_wd()[event.src_path][1] == 'close'
                                                                  and util.get_ignore_wd()[event.src_path][
@@ -119,8 +133,10 @@ class Handler(FileSystemEventHandler):
             print("Received delete event - %s." % event.src_path)
             util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2])
             util.get_socket().close()
+        self.__in_event = False
 
     def on_moved(self, event):
+        self.__in_event = True
         util.set_socket(socket(AF_INET, SOCK_STREAM))
         print('connect on_moved')
         util.get_socket().connect((server_IP, server_port))
@@ -136,6 +152,7 @@ class Handler(FileSystemEventHandler):
             util.send_remove_file(event.src_path, num_of_requests)
             util.upload_file(event.dest_path)
         util.get_socket().close()
+        self.__in_event = False
 
 
 """
@@ -212,21 +229,12 @@ def handle_req():
         message_dict = util.parse_message(message)
         num_of_requests = int(message_dict['num_of_requests'])
         for i in range(num_of_requests):
-            try:
-                w.stop()
-            except:
-                pass
             if 'upload file' in message_dict['action']:
                 util.get_file(message_dict)
             if 'remove file' in message_dict['action']:
                 util.remove_file(message_dict)
             elif 'upload path' in message_dict['action']:
                 util.get_path(message_dict)
-            try:
-                # w = Watcher()
-                w.start()
-            except:
-                pass
             if i == num_of_requests - 1:
                 break
             length = util.recv_all(16)
