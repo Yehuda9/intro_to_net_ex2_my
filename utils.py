@@ -166,7 +166,12 @@ class Utils:
         self.get_socket().send(_message)
 
     def upload_file(self, path_to_file, num_of_requests=1):
-        _message = self.generate_message('upload file', path_to_file, 0, os.path.getsize(path_to_file), num_of_requests)
+        size = 0
+        try:
+            size = os.path.getsize(path_to_file)
+        except FileNotFoundError:
+            pass
+        _message = self.generate_message('upload file', path_to_file, 0, size, num_of_requests)
         # print('file size: ', os.path.getsize(path_to_file))
         self.get_socket().send(_message)
         f = ''
