@@ -291,7 +291,7 @@ if __name__ == '__main__':
         computer_id = util.get_socket().recv(64).decode('utf-8')
         util.set_client_computer_id(computer_id)
         handle_req()
-
+        util.get_socket().close()
         # create new folder and get all the files from the server.
     else:
         s, d, f = util.get_size_of_dir(path_to_folder)
