@@ -156,6 +156,7 @@ if __name__ == '__main__':
                 # computer = client.get_computer_at_i(message_dict['computer_id'])
                 client.add_request(message_dict['computer_id'], message_dict)
             print(message_dict['action'])
+            util.set_id(message_dict['id'])
             # handle request from client
             if 'new client' in message_dict['action']:
                 client_id = ''.join(
