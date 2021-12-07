@@ -39,11 +39,10 @@ class Watcher:
 
     def __init__(self):
         self.event_handler = None
-        self.observer = PausingObserver()
+        self.observer = Observer()
         self.__in_req = False
 
     def requests_updates(self):
-        self.event_handler.set_in_event(True)
         self.__in_req = True
         m = util.generate_message('requests_updates')
         try:
@@ -56,14 +55,7 @@ class Watcher:
             util.get_socket().send(m)
             handle_req()
             util.get_socket().close()
-            self.__in_req = False
-        self.event_handler.set_in_event(False)
-
-    def stop(self):
-        self.observer.pause()
-
-    def start(self):
-        self.observer.resume()
+        self.__in_req = False
 
     def run(self):
         self.event_handler = Handler()
@@ -82,7 +74,7 @@ class Watcher:
                                 and copy[a][0] + 1 < time.time():
                             util.get_ignore_wd().pop(a)
                     print(self.event_handler.get_in_event(), "!!!!!!!!!!!!!!!!!!")
-                    if not self.event_handler.get_in_event() or not self.__in_req:
+                    if not self.event_handler.get_in_event() and not self.__in_req:
                         self.requests_updates()
         except KeyboardInterrupt:
             print('stop Watcher line 27')
