@@ -1,22 +1,27 @@
 import os
-import sys
 import time
+
 from os.path import getsize
-from socket import socket, AF_INET, SOCK_STREAM
-
-import watchdog
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
-
 
 
 class Utils:
 
-    def __init__(self, connection, s, rel_folder_name='', id='0'):
+    def __init__(self, connection, s, rel_folder_name='', id='0', comp_id='0'):
+        self.__client_computer_id = comp_id
         self.__connection = connection
         self.__socket = s
         self.__rel_folder_name = rel_folder_name
         self.__id = id
+        self.__ignore_wd = {}
+
+    def get_ignore_wd(self):
+        return self.__ignore_wd
+
+    def set_client_computer_id(self, comp_id):
+        self.__client_computer_id = comp_id
+
+    def get_client_computer_id(self):
+        return self.__client_computer_id
 
     def is_client(self):
         if self.__connection == 'client':
@@ -31,6 +36,9 @@ class Utils:
 
     def set_id(self, id):
         self.__id = id
+
+    def set_rel_folder_name(self, rel_folder_name):
+        self.__rel_folder_name = rel_folder_name
 
     def recv_all(self, n):
         if n == 0:
@@ -54,7 +62,10 @@ class Utils:
                 d[k] = v
             except:
                 print('error parsing')
-        if not d['action'] == 'new client':
+        if self.__connection == 'client':
+            d['path'] = os.path.join(self.__rel_folder_name, d['path'])
+            # print(d['path'])
+        elif not d['action'] == 'new client':
             d['path'] = os.path.join(os.getcwd(), 'DB', d['id'], d['path'])
         print(d)
         return d
@@ -73,6 +84,8 @@ class Utils:
                 os.rmdir(root)
 
     def remove_file(self, _message_dict):
+        if self.__connection == 'client':
+            self.__ignore_wd[_message_dict['path']] = (time.time(), 'open')
         if os.path.isdir(_message_dict['path']):
             # pass
             self.remove_dir(_message_dict['path'])
@@ -81,20 +94,31 @@ class Utils:
                 os.remove(_message_dict['path'])
             except FileNotFoundError:
                 pass
+        if self.__connection == 'client':
+            self.__ignore_wd[_message_dict['path']] = (time.time(), 'close')
 
     def get_path(self, _message_dict):
+        if self.__connection == 'client':
+            self.__ignore_wd[_message_dict['path']] = (time.time(), 'open')
         os.makedirs(_message_dict['path'], exist_ok=True)
+        if self.__connection == 'client':
+            self.__ignore_wd[_message_dict['path']] = (time.time(), 'close')
+        # self.__ignore_wd.remove(_message_dict['path'])
 
     def get_file(self, _message_dict):
+        d = self.recv_all(int(_message_dict['size_of_data']))
+        if self.__connection == 'client':
+            self.__ignore_wd[_message_dict['path']] = (time.time(), 'open')
         os.makedirs(os.path.dirname(_message_dict['path']), exist_ok=True)
         f = open(_message_dict['path'], 'wb')
-        # print("size of data: ", int(_message_dict['size_of_data']))
-        d = self.recv_all(int(_message_dict['size_of_data']))
-        if int(_message_dict['size_of_data']) != len(d):
-            print('read error!!!!!!!!!!!!!!!', int(_message_dict['size_of_data']) - len(d))
+        """if int(_message_dict['size_of_data']) != len(d):
+            print('read error!!!!!!!!!!!!!!!', int(_message_dict['size_of_data']) - len(d))"""
         f.write(d)
         # print('len(d): ', len(d))
         f.close()
+        if self.__connection == 'client':
+            self.__ignore_wd[_message_dict['path']] = (time.time(), 'close')
+        # self.__ignore_wd.remove(_message_dict['path'])
 
     def get_size_of_dir(self, path):
         s = 0
@@ -111,14 +135,19 @@ class Utils:
 
     def generate_message(self, action, path='', size_of_dirs=0, size_of_data=0, num_of_requests=1):
         if action == 'upload file' or action == 'upload path' or action == 'remove file':
-            r_path = path.split(self.__rel_folder_name, 1)[1].lstrip(os.path.sep)
-            path = os.path.join(self.__rel_folder_name, r_path)
+            try:
+                r_path = path.split(self.__rel_folder_name, 1)[1].lstrip(os.path.sep)
+            except:
+                r_path = path.split(self.__id, 1)[1].lstrip(os.path.sep)
+            path = r_path
+            # path = os.path.join(self.__rel_folder_name.split(os.path.sep)[-1], r_path)
         elif action == 'new client':
-            path = os.path.split(path)[-1]
+            pass
+            # path = os.path.split(path)[-1]
             # path = rel_folder_name
         m = "action:" + action + '\n' + 'id:' + self.__id + '\n' + 'path:' + path + '\n' + 'size_of_dirs:' + str(
             size_of_dirs) + '\n' + 'size_of_data:' + str(size_of_data) + '\n' + 'num_of_requests:' + str(
-            num_of_requests)
+            num_of_requests) + '\n' + 'computer_id:' + self.__client_computer_id
         m = bytes(m, 'utf-8')
         size = bytes(str(len(m)).zfill(16), 'utf-8')
         to_send = size + m
@@ -128,7 +157,6 @@ class Utils:
     def send_remove_file(self, path, num_of_requests=1):
         _message = self.generate_message('remove file', path, 0, 0, num_of_requests)
         self.get_socket().send(_message)
-
 
     def upload_path(self, path, num_of_requests=1):
         _message = self.generate_message('upload path', path, 0, 0, num_of_requests)
@@ -145,13 +173,19 @@ class Utils:
                 self.get_socket().send(b)
 
     def upload_dir_to_server(self, path):
-        self.get_socket().send(self.generate_message('upload path', path, 0, 0, self.get_size_of_dir(path)[2] + 1))
+        # self.get_socket().send(self.generate_message('upload path', path, 0, 0, self.get_size_of_dir(path)[2] + 1))
+        n = self.get_size_of_dir(path)[2]
         for path, dirs, files in os.walk(path):
             for d in dirs:
                 path_to_file = os.path.join(path, d)
                 # print(path_to_file)
-                self.upload_path(path_to_file)
+                self.upload_path(path_to_file, n)
+                n -= 1
             for file in files:
                 path_to_file = os.path.join(path, file)
                 # print(path_to_file)
-                self.upload_file(path_to_file)
+                self.upload_file(path_to_file, n)
+                n -= 1
+        """self.__ignore_wd.clear()
+        print('!!!!!!!!!!!!!!!!!!!!!upload_dir_to_server!!!!!!!!!!!!!!!!!!!')
+        print(self.__ignore_wd)"""
