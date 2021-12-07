@@ -97,19 +97,22 @@ class Handler(FileSystemEventHandler):
         return self.__in_event
 
     def is_open(self, p):
-        if os.path.exists(p):
+        historical_size = -1
+        while historical_size != os.path.getsize(p):
+            historical_size = os.path.getsize(p)
+            time.sleep(0.05)
+        """if os.path.exists(p):
             try:
                 os.rename(p, p)
                 return False
             except OSError as e:
                 return True
-        return False
+        return False"""
 
     def on_created(self, event):
         self.__in_event = True
         print(util.get_ignore_wd())
-        if self.is_open(event.src_path):
-            return
+        self.is_open(event.src_path)
         if not self.is_start_with(event.src_path) or (
                 event.src_path in util.get_ignore_wd().keys() and util.get_ignore_wd()[event.src_path][1] == 'close'
                 and util.get_ignore_wd()[event.src_path][
@@ -129,6 +132,7 @@ class Handler(FileSystemEventHandler):
     def on_modified(self, event):
         self.__in_event = True
         print(util.get_ignore_wd())
+        self.is_open(event.src_path)
         if event.src_path not in util.get_ignore_wd().keys() or (util.get_ignore_wd()[event.src_path][1] == 'close'
                                                                  and util.get_ignore_wd()[event.src_path][
                                                                      0] + 1 < time.time()):
