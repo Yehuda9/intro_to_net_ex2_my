@@ -73,7 +73,7 @@ class Watcher:
                         if copy[a][1] == 'close' \
                                 and copy[a][0] + 1 < time.time():
                             util.get_ignore_wd().pop(a)
-                    print(self.event_handler.get_in_event(), "!!!!!!!!!!!!!!!!!!")
+                    print(self.event_handler.get_in_event(), self.__in_req)
                     if not self.event_handler.get_in_event() and not self.__in_req:
                         self.requests_updates()
         except KeyboardInterrupt:

@@ -182,7 +182,7 @@ class Utils:
                 # print('len(b): ', len(b))
                 self.get_socket().send(b)
             f.close()
-        except PermissionError as e:
+        except IOError as e:
             pass
         finally:
             try:
