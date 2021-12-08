@@ -276,7 +276,7 @@ def handle_req():
                 util.remove_file(message_dict)
             elif 'upload path' in message_dict['action']:
                 util.get_path(message_dict)
-            if 'move file' == message_dict['action']:
+            if 'move_file' == message_dict['action']:
                 util.get_ignore_wd()[message_dict['path']] = (time.time(), 'open')
                 util.get_ignore_wd()[message_dict['new_path']] = (time.time(), 'open')
                 os.renames(message_dict['path'], message_dict['new_path'])

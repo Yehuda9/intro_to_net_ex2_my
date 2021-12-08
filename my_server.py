@@ -2,8 +2,8 @@ import random
 import string
 import sys
 from socket import socket, AF_INET, SOCK_STREAM
-import utils
 
+import utils
 from utils import *
 
 """def recv_all(n):
@@ -191,7 +191,12 @@ if __name__ == '__main__':
                 # print('upload path!!!!!!!!!!')
                 util.get_path(message_dict)
             if 'move file' == message_dict['action']:
-                os.renames(message_dict['path'], message_dict['new_path'])
+                a = message_dict['path'].replace('\\\\', '\\')
+                b = message_dict['new_path'].replace('\\\\', '\\')
+                try:
+                    os.renames(a, b)
+                except:
+                    print('rename error')
             if 'requests_updates' in message_dict['action']:
                 comp = clients[message_dict['id']].get_computer_at_i(message_dict['computer_id'])
                 try:
@@ -205,6 +210,9 @@ if __name__ == '__main__':
                         util.send_remove_file(req['path'], req['num_of_requests'])
                     if req['action'] == 'upload path':
                         util.upload_path(req['path'], req['num_of_requests'])
+                    if req['action'] == 'move file':
+                        util.send_move_file(req['path'], req['new_path'])
+
                 comp.clear_requests()
                 # print(i, num_of_requests)
             if i == num_of_requests - 1:
