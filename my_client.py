@@ -117,9 +117,11 @@ class Handler(FileSystemEventHandler):
         self.__in_event = True
         print(util.get_ignore_wd())
         # self.is_open(event.src_path)
-        if not self.is_start_with(event.src_path) or (
-                event.src_path in util.get_ignore_wd().keys() and util.get_ignore_wd()[event.src_path][1] == 'close'
-                and util.get_ignore_wd()[event.src_path][
+        p = event.src_path
+        p = p.replace('\\', '\\\\')
+        if not self.is_start_with(p) or (
+                p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
+                and util.get_ignore_wd()[p][
                     0] + 3 < time.time()):
             util.set_socket(socket(AF_INET, SOCK_STREAM))
             print('connect on_created')
@@ -137,9 +139,12 @@ class Handler(FileSystemEventHandler):
         self.__in_event = True
         print(util.get_ignore_wd())
         # self.is_open(event.src_path)
-        if event.src_path not in util.get_ignore_wd().keys() or (util.get_ignore_wd()[event.src_path][1] == 'close'
-                                                                 and util.get_ignore_wd()[event.src_path][
-                                                                     0] + 3 < time.time()):
+        p = event.src_path
+        p = p.replace('\\', '\\\\')
+        if not self.is_start_with(p) or (
+                p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
+                and util.get_ignore_wd()[p][
+                    0] + 3 < time.time()):
             print("Received modified event - %s." % event.src_path)
             if not os.path.isdir(event.src_path):
                 util.set_socket(socket(AF_INET, SOCK_STREAM))
@@ -153,9 +158,12 @@ class Handler(FileSystemEventHandler):
     def on_deleted(self, event):
         self.__in_event = True
         print(util.get_ignore_wd())
-        if event.src_path not in util.get_ignore_wd().keys() or (util.get_ignore_wd()[event.src_path][1] == 'close'
-                                                                 and util.get_ignore_wd()[event.src_path][
-                                                                     0] + 3 < time.time()):
+        p = event.src_path
+        p = p.replace('\\', '\\\\')
+        if not self.is_start_with(p) or (
+                p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
+                and util.get_ignore_wd()[p][
+                    0] + 3 < time.time()):
             util.set_socket(socket(AF_INET, SOCK_STREAM))
             print("Received delete event - %s." % event.src_path)
             print('connect on_deleted')
