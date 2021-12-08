@@ -118,14 +118,14 @@ class Handler(FileSystemEventHandler):
         print(util.get_ignore_wd())
         # self.is_open(event.src_path)
         p = event.src_path
-        p = p.replace('\\', '\\\\')
+        # p = p.replace('\\', '\\\\')
         if not self.is_start_with(p) or (
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
                     0] + 3 < time.time()):
             util.set_socket(socket(AF_INET, SOCK_STREAM))
             print('connect on_created')
-            print("Received created event - %s." % event.src_path)
+            print("Received created event - %s." % p)
             util.get_socket().connect((server_IP, server_port))
             if os.path.isdir(event.src_path):
                 # upload_dir_to_server(server_socket, event.src_path)
@@ -140,12 +140,12 @@ class Handler(FileSystemEventHandler):
         print(util.get_ignore_wd())
         # self.is_open(event.src_path)
         p = event.src_path
-        p = p.replace('\\', '\\\\')
+        #p = p.replace('\\', '\\\\')
         if not self.is_start_with(p) or (
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
                     0] + 3 < time.time()):
-            print("Received modified event - %s." % event.src_path)
+            print("Received modified event - %s." % p)
             if not os.path.isdir(event.src_path):
                 util.set_socket(socket(AF_INET, SOCK_STREAM))
                 print('connect on_modified')
@@ -159,13 +159,13 @@ class Handler(FileSystemEventHandler):
         self.__in_event = True
         print(util.get_ignore_wd())
         p = event.src_path
-        p = p.replace('\\', '\\\\')
+        #p = p.replace('\\', '\\\\')
         if not self.is_start_with(p) or (
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
                     0] + 3 < time.time()):
             util.set_socket(socket(AF_INET, SOCK_STREAM))
-            print("Received delete event - %s." % event.src_path)
+            print("Received delete event - %s." % p)
             print('connect on_deleted')
             util.get_socket().connect((server_IP, server_port))
             util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2])
