@@ -43,6 +43,7 @@ class Watcher:
         self.__in_req = False
 
     def requests_updates(self):
+        print("start requests_updates")
         self.__in_req = True
         m = util.generate_message('requests_updates')
         try:
@@ -56,6 +57,7 @@ class Watcher:
             handle_req()
             util.get_socket().close()
         self.__in_req = False
+        print("finish requests_updates")
 
     def run(self):
         self.event_handler = Handler()
@@ -71,7 +73,7 @@ class Watcher:
                     copy = util.get_ignore_wd().copy()
                     for a in copy.keys():
                         if copy[a][1] == 'close' \
-                                and copy[a][0] + 1 < time.time():
+                                and copy[a][0] + 3 < time.time():
                             util.get_ignore_wd().pop(a)
                     print(self.event_handler.get_in_event(), self.__in_req)
                     if not self.event_handler.get_in_event() and not self.__in_req:
@@ -118,11 +120,11 @@ class Handler(FileSystemEventHandler):
         if not self.is_start_with(event.src_path) or (
                 event.src_path in util.get_ignore_wd().keys() and util.get_ignore_wd()[event.src_path][1] == 'close'
                 and util.get_ignore_wd()[event.src_path][
-                    0] + 1 < time.time()):
+                    0] + 3 < time.time()):
             util.set_socket(socket(AF_INET, SOCK_STREAM))
             print('connect on_created')
-            util.get_socket().connect((server_IP, server_port))
             print("Received created event - %s." % event.src_path)
+            util.get_socket().connect((server_IP, server_port))
             if os.path.isdir(event.src_path):
                 # upload_dir_to_server(server_socket, event.src_path)
                 util.upload_path(event.src_path, util.get_size_of_dir(event.src_path)[2])
@@ -137,7 +139,7 @@ class Handler(FileSystemEventHandler):
         # self.is_open(event.src_path)
         if event.src_path not in util.get_ignore_wd().keys() or (util.get_ignore_wd()[event.src_path][1] == 'close'
                                                                  and util.get_ignore_wd()[event.src_path][
-                                                                     0] + 1 < time.time()):
+                                                                     0] + 3 < time.time()):
             print("Received modified event - %s." % event.src_path)
             if not os.path.isdir(event.src_path):
                 util.set_socket(socket(AF_INET, SOCK_STREAM))
@@ -153,11 +155,11 @@ class Handler(FileSystemEventHandler):
         print(util.get_ignore_wd())
         if event.src_path not in util.get_ignore_wd().keys() or (util.get_ignore_wd()[event.src_path][1] == 'close'
                                                                  and util.get_ignore_wd()[event.src_path][
-                                                                     0] + 1 < time.time()):
+                                                                     0] + 3 < time.time()):
             util.set_socket(socket(AF_INET, SOCK_STREAM))
+            print("Received delete event - %s." % event.src_path)
             print('connect on_deleted')
             util.get_socket().connect((server_IP, server_port))
-            print("Received delete event - %s." % event.src_path)
             util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2])
             util.get_socket().close()
         self.__in_event = False
