@@ -279,7 +279,7 @@ def handle_req():
             if 'move file' == message_dict['action']:
                 util.get_ignore_wd()[message_dict['path']] = (time.time(), 'open')
                 util.get_ignore_wd()[message_dict['new_path']] = (time.time(), 'open')
-                os.rename(message_dict['path'], message_dict['new_path'])
+                os.renames(message_dict['path'], message_dict['new_path'])
                 util.get_ignore_wd()[message_dict['path']] = (time.time(), 'close')
                 util.get_ignore_wd()[message_dict['new_path']] = (time.time(), 'close')
 
