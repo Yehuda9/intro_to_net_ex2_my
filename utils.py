@@ -161,9 +161,10 @@ class Utils:
             try:
                 d_path = new_path.split(self.__rel_folder_name, 1)[1].lstrip(os.path.sep)
             except IndexError:
-                d_path = new_path.split(self.__id, 1)[1].lstrip(os.path.sep)
-            except:
-                pass
+                try:
+                    d_path = new_path.split(self.__id, 1)[1].lstrip(os.path.sep)
+                except:
+                    pass
             path = r_path
             new_path = d_path
             # path = os.path.join(self.__rel_folder_name.split(os.path.sep)[-1], r_path)
