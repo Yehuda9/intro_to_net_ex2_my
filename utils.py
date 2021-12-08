@@ -153,11 +153,19 @@ class Utils:
 
     def generate_message(self, action, path='', size_of_dirs=0, size_of_data=0, num_of_requests=1, new_path=''):
         if action == 'upload file' or action == 'upload path' or action == 'remove file' or action == 'move file':
+            d_path = new_path
             try:
                 r_path = path.split(self.__rel_folder_name, 1)[1].lstrip(os.path.sep)
             except:
                 r_path = path.split(self.__id, 1)[1].lstrip(os.path.sep)
+            try:
+                d_path = path.split(self.__rel_folder_name, 1)[1].lstrip(os.path.sep)
+            except IndexError:
+                d_path = path.split(self.__id, 1)[1].lstrip(os.path.sep)
+            except:
+                pass
             path = r_path
+            new_path = d_path
             # path = os.path.join(self.__rel_folder_name.split(os.path.sep)[-1], r_path)
         elif action == 'new client':
             pass
