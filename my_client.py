@@ -52,9 +52,12 @@ class Watcher:
         except Exception as e:
             util.set_socket(socket(AF_INET, SOCK_STREAM))
             print('connect requests_updates')
-            util.get_socket().connect((server_IP, server_port))
-            util.get_socket().send(m)
-            handle_req()
+            try:
+                util.get_socket().connect((server_IP, server_port))
+                util.get_socket().send(m)
+                handle_req()
+            except:
+                pass
             util.get_socket().close()
         self.__in_req = False
         print("finish requests_updates")
@@ -269,11 +272,11 @@ def handle_req():
         for i in range(num_of_requests):
             if 'upload file' in message_dict['action']:
                 util.get_file(message_dict)
-            if 'remove file' in message_dict['action']:
+            if 'remove file' == message_dict['action']:
                 util.remove_file(message_dict)
             elif 'upload path' in message_dict['action']:
                 util.get_path(message_dict)
-            if 'move file' in message_dict['action']:
+            if 'move file' == message_dict['action']:
                 util.get_ignore_wd()[message_dict['path']] = (time.time(), 'open')
                 util.get_ignore_wd()[message_dict['new_path']] = (time.time(), 'open')
                 os.rename(message_dict['path'], message_dict['new_path'])
