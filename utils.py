@@ -70,10 +70,11 @@ class Utils:
             if 'new_path' in d.keys():
                 d['new_path'] = os.path.join(self.__rel_folder_name, d['new_path'])
             # print(d['path'])
+        elif 'new_path' in d.keys():
+            d['new_path'] = os.path.join(os.getcwd(), 'DB', d['id'], d['new_path'])
         elif not d['action'] == 'new client':
             d['path'] = os.path.join(os.getcwd(), 'DB', d['id'], d['path'])
-            if 'new_path' in d.keys():
-                d['new_path'] = os.path.join(os.getcwd(), 'DB', d['id'], d['new_path'])
+
         print(d)
         return d
 
