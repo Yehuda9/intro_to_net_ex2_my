@@ -79,23 +79,32 @@ class Utils:
                     # print('1 os.rmdir(' + os.path.join(root, dir) + ')')
                     # os.rmdir(os.path.join(root, dir))
                 for file in files:
-                    os.remove(os.path.join(root, file))
+                    p = os.path.join(root, file)
+                    if self.__connection == 'client':
+                        self.__ignore_wd[p] = (time.time(), 'open')
+                    os.remove(p)
+                    if self.__connection == 'client':
+                        self.__ignore_wd[p] = (time.time(), 'close')
                 print('2 os.rmdir(' + root + ')')
+                if self.__connection == 'client':
+                    self.__ignore_wd[root] = (time.time(), 'open')
                 os.rmdir(root)
+                if self.__connection == 'client':
+                    self.__ignore_wd[root] = (time.time(), 'close')
 
     def remove_file(self, _message_dict):
-        if self.__connection == 'client':
-            self.__ignore_wd[_message_dict['path']] = (time.time(), 'open')
         if os.path.isdir(_message_dict['path']):
-            # pass
             self.remove_dir(_message_dict['path'])
         else:
+            if self.__connection == 'client':
+                self.__ignore_wd[_message_dict['path']] = (time.time(), 'open')
             try:
                 os.remove(_message_dict['path'])
             except FileNotFoundError:
                 pass
-        if self.__connection == 'client':
-            self.__ignore_wd[_message_dict['path']] = (time.time(), 'close')
+            finally:
+                if self.__connection == 'client':
+                    self.__ignore_wd[_message_dict['path']] = (time.time(), 'close')
 
     def get_path(self, _message_dict):
         if self.__connection == 'client':
