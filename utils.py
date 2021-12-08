@@ -152,7 +152,7 @@ class Utils:
         return 0, 0, 1
 
     def generate_message(self, action, path='', size_of_dirs=0, size_of_data=0, num_of_requests=1, new_path=''):
-        if action == 'upload file' or action == 'upload path' or action == 'remove file':
+        if action == 'upload file' or action == 'upload path' or action == 'remove file' or action == 'move file':
             try:
                 r_path = path.split(self.__rel_folder_name, 1)[1].lstrip(os.path.sep)
             except:
