@@ -185,12 +185,12 @@ if __name__ == '__main__':
                 util.upload_dir_to_server(os.path.join('.' + os.path.sep + 'DB', message_dict['id']))
             if 'upload file' in message_dict['action']:
                 util.get_file(message_dict)
-            if 'remove file' in message_dict['action']:
+            if 'remove file' == message_dict['action']:
                 util.remove_file(message_dict)
             if 'upload path' in message_dict['action']:
                 # print('upload path!!!!!!!!!!')
                 util.get_path(message_dict)
-            if 'move file' in message_dict['action']:
+            if 'move file' == message_dict['action']:
                 os.rename(message_dict['path'], message_dict['new_path'])
             if 'requests_updates' in message_dict['action']:
                 comp = clients[message_dict['id']].get_computer_at_i(message_dict['computer_id'])
