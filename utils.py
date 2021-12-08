@@ -17,6 +17,9 @@ class Utils:
     def get_ignore_wd(self):
         return self.__ignore_wd
 
+    def get_connection(self):
+        return self.__connection
+
     def set_client_computer_id(self, comp_id):
         self.__client_computer_id = comp_id
 
@@ -64,6 +67,8 @@ class Utils:
                 print('error parsing')
         if self.__connection == 'client':
             d['path'] = os.path.join(self.__rel_folder_name, d['path'])
+            if 'new_path' in d.keys():
+                d['new_path'] = os.path.join(self.__rel_folder_name, d['new_path'])
             # print(d['path'])
         elif not d['action'] == 'new client':
             d['path'] = os.path.join(os.getcwd(), 'DB', d['id'], d['path'])
@@ -145,7 +150,7 @@ class Utils:
                 return s, d, f
         return 0, 0, 1
 
-    def generate_message(self, action, path='', size_of_dirs=0, size_of_data=0, num_of_requests=1):
+    def generate_message(self, action, path='', size_of_dirs=0, size_of_data=0, num_of_requests=1, new_path=''):
         if action == 'upload file' or action == 'upload path' or action == 'remove file':
             try:
                 r_path = path.split(self.__rel_folder_name, 1)[1].lstrip(os.path.sep)
@@ -159,12 +164,16 @@ class Utils:
             # path = rel_folder_name
         m = "action:" + action + '\n' + 'id:' + self.__id + '\n' + 'path:' + path + '\n' + 'size_of_dirs:' + str(
             size_of_dirs) + '\n' + 'size_of_data:' + str(size_of_data) + '\n' + 'num_of_requests:' + str(
-            num_of_requests) + '\n' + 'computer_id:' + self.__client_computer_id
+            num_of_requests) + '\n' + 'computer_id:' + self.__client_computer_id + '\n' + 'new_path:' + new_path
         m = bytes(m, 'utf-8')
         size = bytes(str(len(m)).zfill(16), 'utf-8')
         to_send = size + m
         print(to_send)
         return to_send
+
+    def send_move_file(self, path, new_path, num_of_requests=1):
+        _message = self.generate_message('move file', path, 0, 0, num_of_requests, new_path)
+        self.get_socket().send(_message)
 
     def send_remove_file(self, path, num_of_requests=1):
         _message = self.generate_message('remove file', path, 0, 0, num_of_requests)

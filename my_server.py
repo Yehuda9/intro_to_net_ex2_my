@@ -190,6 +190,8 @@ if __name__ == '__main__':
             if 'upload path' in message_dict['action']:
                 # print('upload path!!!!!!!!!!')
                 util.get_path(message_dict)
+            if 'move file' in message_dict['action']:
+                os.rename(message_dict['path'], message_dict['new_path'])
             if 'requests_updates' in message_dict['action']:
                 comp = clients[message_dict['id']].get_computer_at_i(message_dict['computer_id'])
                 try:

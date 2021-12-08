@@ -140,7 +140,7 @@ class Handler(FileSystemEventHandler):
         print(util.get_ignore_wd())
         # self.is_open(event.src_path)
         p = event.src_path
-        #p = p.replace('\\', '\\\\')
+        # p = p.replace('\\', '\\\\')
         if not self.is_start_with(p) or (
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
@@ -159,7 +159,7 @@ class Handler(FileSystemEventHandler):
         self.__in_event = True
         print(util.get_ignore_wd())
         p = event.src_path
-        #p = p.replace('\\', '\\\\')
+        # p = p.replace('\\', '\\\\')
         if not self.is_start_with(p) or (
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
@@ -181,13 +181,14 @@ class Handler(FileSystemEventHandler):
         print("Received moved event - %s." % event.dest_path)
         num_of_requests = util.get_size_of_dir(event.src_path)[2] + 1
         # upload_file(server_socket, event.dest_path, get_size_of_dir(event.src_path)[2])
-        if os.path.isdir(event.dest_path):
+        util.send_move_file(event.src_path, event.dest_path)
+        """if os.path.isdir(event.dest_path):
             util.send_remove_file(event.src_path, num_of_requests)
             # upload_dir_to_server(server_socket, event.dest_path)
             util.upload_path(event.dest_path, util.get_size_of_dir(event.src_path)[2])
         else:
             util.send_remove_file(event.src_path, num_of_requests)
-            util.upload_file(event.dest_path)
+            util.upload_file(event.dest_path)"""
         util.get_socket().close()
         self.__in_event = False
 
@@ -272,6 +273,13 @@ def handle_req():
                 util.remove_file(message_dict)
             elif 'upload path' in message_dict['action']:
                 util.get_path(message_dict)
+            if 'move file' in message_dict['action']:
+                util.get_ignore_wd()[message_dict['path']] = (time.time(), 'open')
+                util.get_ignore_wd()[message_dict['new_path']] = (time.time(), 'open')
+                os.rename(message_dict['path'], message_dict['new_path'])
+                util.get_ignore_wd()[message_dict['path']] = (time.time(), 'close')
+                util.get_ignore_wd()[message_dict['new_path']] = (time.time(), 'close')
+
             if i == num_of_requests - 1:
                 break
             length = util.recv_all(16)
