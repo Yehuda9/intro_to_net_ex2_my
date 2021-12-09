@@ -282,6 +282,7 @@ if __name__ == '__main__':
         my_id = sys.argv[5]
         util.set_id(my_id)
         util.set_rel_folder_name(path_to_folder)
+        os.makedirs(path_to_folder, exist_ok=True)
         message = util.generate_message('exists client', path_to_folder, 0, 1)
         # sends to the server request to get id for the current computer
         util.get_socket().send(message)
