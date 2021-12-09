@@ -148,7 +148,7 @@ class Handler(FileSystemEventHandler):
             util.get_socket().connect((server_IP, server_port))
             if os.path.isdir(event.src_path):
                 # upload_dir_to_server(server_socket, event.src_path)
-                util.upload_path(event.src_path, util.get_size_of_dir(event.src_path)[2])
+                util.upload_path(event.src_path, util.get_size_of_dir(event.src_path))
             else:
                 util.upload_file(event.src_path)
             util.get_socket().close()
@@ -170,7 +170,7 @@ class Handler(FileSystemEventHandler):
                 util.set_socket(socket(AF_INET, SOCK_STREAM))
                 print('connect on_modified')
                 util.get_socket().connect((server_IP, server_port))
-                util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2] * 2)
+                util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path) * 2)
                 util.upload_file(event.src_path)
                 util.get_socket().close()
         self.__in_event = False
@@ -189,7 +189,7 @@ class Handler(FileSystemEventHandler):
             print("Received delete event - %s." % p)
             print('connect on_deleted')
             util.get_socket().connect((server_IP, server_port))
-            util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2])
+            util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path))
             util.get_socket().close()
         self.__in_event = False
 
@@ -201,7 +201,7 @@ class Handler(FileSystemEventHandler):
         util.get_socket().connect((server_IP, server_port))
         print("Received moved event - %s." % event.src_path)
         print("Received moved event - %s." % event.dest_path)
-        num_of_requests = util.get_size_of_dir(event.dest_path)[2]
+        num_of_requests = util.get_size_of_dir(event.dest_path)
         # upload_file(server_socket, event.dest_path, get_size_of_dir(event.src_path)[2])
         util.send_move_file(event.src_path, event.dest_path, num_of_requests)
         """if os.path.isdir(event.dest_path):
@@ -325,7 +325,7 @@ if __name__ == '__main__':
     if len(sys.argv) == 6:
         my_id = sys.argv[5]
         util.set_id(my_id)
-        s, d, f = util.get_size_of_dir(path_to_folder)
+        f = util.get_size_of_dir(path_to_folder)
         util.set_rel_folder_name(path_to_folder)
         message = util.generate_message('exists client', path_to_folder, 0, 0, 1)
         util.get_socket().send(message)
@@ -335,9 +335,9 @@ if __name__ == '__main__':
         util.get_socket().close()
         # create new folder and get all the files from the server.
     else:
-        s, d, f = util.get_size_of_dir(path_to_folder)
+        f = util.get_size_of_dir(path_to_folder)
         # f = num of files and subdirs + new client + rootdir
-        message = util.generate_message('new client', path_to_folder, d, s, f + 1)
+        message = util.generate_message('new client', path_to_folder, 0, f + 1)
         util.get_socket().send(message)
         my_id = util.get_socket().recv(128).decode('utf-8')
         util.set_id(my_id)

@@ -5,8 +5,14 @@ from os.path import getsize
 
 
 class Utils:
-
     def __init__(self, connection, s, rel_folder_name='', id='0', comp_id='0'):
+        """
+        :param connection: server or client
+        :param s: socket
+        :param rel_folder_name: name relative folder name
+        :param id: client id
+        :param comp_id: computer id
+        """
         self.__client_computer_id = comp_id
         self.__connection = connection
         self.__socket = s
@@ -44,119 +50,138 @@ class Utils:
         self.__rel_folder_name = rel_folder_name
 
     def recv_all(self, n):
-        if n == 0:
-            return b''
+        """
+        :param n: number of bytes o receive
+        :return: n bytes received from socket
+        """
         data = b''
+        if n == 0:
+            return data
         while len(data) < n:
             packet = self.get_socket().recv(n - len(data))
-            if not packet:
-                return None
+            if not packet or packet == b'':
+                break
             data += packet
         return data
 
     def parse_message(self, m):
+        """
+        parse message to dict
+        :param m: message from socket in bytes, 'key1:value1\n...\nkey1:value1'
+        :return: dict of message
+        """
         m = str(m, 'utf-8')
-        # print('m: ', m)
         d = {}
         l = m.split('\n')
         for e in l:
             try:
                 k, v = e.split(':', 1)
                 d[k] = v
-            except:
-                print('error parsing')
+            except Exception:
+                pass
 
-        if self.__connection == 'client':
+        if self.is_client():
+            # if client parse message, add relative folder name to received path
             d['path'] = os.path.join(self.__rel_folder_name, d['path'])
             d['new_path'] = os.path.join(self.__rel_folder_name, d['new_path'])
         elif not d['action'] == 'new client':
+            # if server parse message, add cwd and client id to received path
             d['path'] = os.path.join(os.getcwd(), 'DB', d['id'], d['path'])
             d['new_path'] = os.path.join(os.getcwd(), 'DB', d['id'], d['new_path'])
-
         print(d)
         return d
 
     def remove_dir(self, path):
+        """
+        recursively remove directory
+        :param path: path to directory
+        """
         if os.path.exists(path):
             for root, dirs, files in os.walk(path):
                 for dir in dirs:
-                    print('recursive call')
+                    # recursive call for each directory
                     self.remove_dir(os.path.join(root, dir))
-                    # print('1 os.rmdir(' + os.path.join(root, dir) + ')')
-                    # os.rmdir(os.path.join(root, dir))
                 for file in files:
                     p = os.path.join(root, file)
-                    if self.__connection == 'client':
-                        self.__ignore_wd[p] = (time.time(), 'open')
+                    self.update_ignore_wd(p, 'open')
+                    # remove file
                     os.remove(p)
-                    if self.__connection == 'client':
-                        self.__ignore_wd[p] = (time.time(), 'close')
-                print('2 os.rmdir(' + root + ')')
-                if self.__connection == 'client':
-                    self.__ignore_wd[root] = (time.time(), 'open')
+                    self.update_ignore_wd(p, 'close')
+                self.update_ignore_wd(root, 'open')
+                # remove empty dir
                 os.rmdir(root)
-                if self.__connection == 'client':
-                    self.__ignore_wd[root] = (time.time(), 'close')
+                self.update_ignore_wd(root, 'close')
+
+    def update_ignore_wd(self, p, c_o):
+        """
+        save path, path status and current time
+        :param p: path to ignore event
+        :param c_o: close or open
+        """
+        if self.is_client():
+            self.__ignore_wd[p] = (time.time(), c_o)
 
     def remove_file(self, _message_dict):
+        """
+        remove file or directory
+        :param _message_dict: message_dict
+        """
         if os.path.isdir(_message_dict['path']):
+            # if path is directory remove directory
             self.remove_dir(_message_dict['path'])
         else:
-            if self.__connection == 'client':
-                self.__ignore_wd[_message_dict['path']] = (time.time(), 'open')
+            # remove file
+            self.update_ignore_wd(_message_dict['path'], 'open')
             try:
                 os.remove(_message_dict['path'])
             except FileNotFoundError:
                 pass
             finally:
-                if self.__connection == 'client':
-                    self.__ignore_wd[_message_dict['path']] = (time.time(), 'close')
+                self.update_ignore_wd(_message_dict['path'], 'close')
 
     def get_path(self, _message_dict):
-        if self.__connection == 'client':
-            self.__ignore_wd[_message_dict['path']] = (time.time(), 'open')
+        """
+        :param _message_dict: message_dict
+        """
+        self.update_ignore_wd(_message_dict['path'], 'open')
         os.makedirs(_message_dict['path'], exist_ok=True)
-        print('os.makedirs(' + _message_dict['path'] + ', exist_ok=True)')
-        if self.__connection == 'client':
-            self.__ignore_wd[_message_dict['path']] = (time.time(), 'close')
-        # self.__ignore_wd.remove(_message_dict['path'])
+        self.update_ignore_wd(_message_dict['path'], 'close')
 
-    def get_file(self, _message_dict):  #
+    def get_file(self, _message_dict):
+        """
+
+        :param _message_dict: message_dict
+        """
+        # receive file from socket
         d = self.recv_all(int(_message_dict['size_of_data']))
-        if self.__connection == 'client':
-            self.__ignore_wd[_message_dict['path']] = (time.time(), 'open')
+        self.update_ignore_wd(_message_dict['path'], 'open')
+        # make root dir for file
         os.makedirs(os.path.dirname(_message_dict['path']), exist_ok=True)
         f = None
         try:
             f = open(_message_dict['path'], 'wb')
         except Exception:
-            if self.__connection == 'client':
-                self.__ignore_wd[_message_dict['path']] = (time.time(), 'close')
+            self.update_ignore_wd(_message_dict['path'], 'close')
             return
-        """if int(_message_dict['size_of_data']) != len(d):
-            print('read error!!!!!!!!!!!!!!!', int(_message_dict['size_of_data']) - len(d))"""
         try:
             f.write(d)
-        except TypeError as e:
+        except Exception:
             f.write(b'')
-        # print('len(d): ', len(d))
         f.close()
-        if self.__connection == 'client':
-            self.__ignore_wd[_message_dict['path']] = (time.time(), 'close')
-        # self.__ignore_wd.remove(_message_dict['path'])
+        self.update_ignore_wd(_message_dict['path'], 'close')
 
     def get_size_of_dir(self, path):
-        s = 0
-        d = 0
+        """
+        :param path:
+        :return: number of all files and directories in path, recursively
+        """
         f = 0
         if os.path.isdir(path):
             for root, dirs, files in os.walk(path):
-                d += len(dirs)
                 f += len(files) + len(dirs)
-                s += sum(getsize(os.path.join(root, name)) for name in files)
             if f > 0:
-                return s, d, f
-        return 0, 0, 1
+                return f
+        return 1
 
     def generate_message(self, action, path='', size_of_dirs=0, size_of_data=0, num_of_requests=1, new_path=''):
         if action == 'upload file' or action == 'upload path' or action == 'remove file' or action == 'move file':
@@ -227,7 +252,7 @@ class Utils:
 
     def upload_dir_to_server(self, path):
         # self.get_socket().send(self.generate_message('upload path', path, 0, 0, self.get_size_of_dir(path)[2] + 1))
-        n = self.get_size_of_dir(path)[2]
+        n = self.get_size_of_dir(path)
         for path, dirs, files in os.walk(path):
             for d in dirs:
                 path_to_file = os.path.join(path, d)
