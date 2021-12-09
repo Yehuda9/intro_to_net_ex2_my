@@ -44,7 +44,7 @@ class Watcher:
 
     def requests_updates(self):
         print("start requests_updates")
-        self.__in_req = True
+        self.event_handler.set_in_req(True)
         m = util.generate_message('requests_updates')
         try:
             util.get_socket().send(m)
@@ -59,7 +59,7 @@ class Watcher:
             except:
                 pass
             util.get_socket().close()
-        self.__in_req = False
+        self.event_handler.set_in_req(False)
         print("finish requests_updates")
 
     def run(self):
@@ -78,8 +78,8 @@ class Watcher:
                         if copy[a][1] == 'close' \
                                 and copy[a][0] + 3 < time.time():
                             util.get_ignore_wd().pop(a)
-                    print(self.event_handler.get_in_event(), self.__in_req)
-                    if not self.event_handler.get_in_event() and not self.__in_req:
+                    print(self.event_handler.get_in_event(), self.event_handler.get_in_req())
+                    if not self.event_handler.get_in_event() and not self.event_handler.get_in_req():
                         self.requests_updates()
         except KeyboardInterrupt:
             print('stop Watcher line 27')
@@ -90,6 +90,13 @@ class Watcher:
 class Handler(FileSystemEventHandler):
     def __init__(self):
         self.__in_event = False
+        self.__in_req = False
+
+    def get_in_req(self):
+        return self.__in_req
+
+    def set_in_req(self, b):
+        self.__in_req = b
 
     def set_in_event(self, b):
         self.__in_event = b
@@ -115,6 +122,13 @@ class Handler(FileSystemEventHandler):
             except OSError as e:
                 return True
         return False"""
+
+    def on_any_event(self, event):
+        i = 0
+        while self.__in_req:
+            i += 1
+            print(i)
+            continue
 
     def on_created(self, event):
         self.__in_event = True
