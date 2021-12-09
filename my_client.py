@@ -139,7 +139,7 @@ class Handler(FileSystemEventHandler):
         if not self.is_start_with(p) or (
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
-                    0] + 3 < time.time()):
+                    0] + 5 < time.time()):
             self.wait_for_handle_req_fin()
             self.__in_event = True
             util.set_socket(socket(AF_INET, SOCK_STREAM))
@@ -162,7 +162,7 @@ class Handler(FileSystemEventHandler):
         if not self.is_start_with(p) or (
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
-                    0] + 3 < time.time()):
+                    0] + 5 < time.time()):
             self.wait_for_handle_req_fin()
             self.__in_event = True
             print("Received modified event - %s." % p)
@@ -182,7 +182,7 @@ class Handler(FileSystemEventHandler):
         if not self.is_start_with(p) or (
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
-                    0] + 3 < time.time()):
+                    0] + 5 < time.time()):
             self.wait_for_handle_req_fin()
             self.__in_event = True
             util.set_socket(socket(AF_INET, SOCK_STREAM))
@@ -201,9 +201,9 @@ class Handler(FileSystemEventHandler):
         util.get_socket().connect((server_IP, server_port))
         print("Received moved event - %s." % event.src_path)
         print("Received moved event - %s." % event.dest_path)
-        num_of_requests = util.get_size_of_dir(event.src_path)[2]
+        num_of_requests = util.get_size_of_dir(event.dest_path)[2]
         # upload_file(server_socket, event.dest_path, get_size_of_dir(event.src_path)[2])
-        util.send_move_file(event.src_path, event.dest_path,num_of_requests)
+        util.send_move_file(event.src_path, event.dest_path, num_of_requests)
         """if os.path.isdir(event.dest_path):
             util.send_remove_file(event.src_path, num_of_requests)
             # upload_dir_to_server(server_socket, event.dest_path)
