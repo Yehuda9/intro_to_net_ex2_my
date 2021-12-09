@@ -212,8 +212,9 @@ if __name__ == '__main__':
                         util.upload_path(req['path'], req['num_of_requests'])
                     if req['action'] == 'move file':
                         util.send_move_file(req['path'], req['new_path'])
-
+                # print(comp.get_requests())
                 comp.clear_requests()
+                print(comp.get_requests())
                 # print(i, num_of_requests)
             if i == num_of_requests - 1:
                 break
