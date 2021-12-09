@@ -143,7 +143,7 @@ if __name__ == '__main__':
                 client = clients[message_dict['id']]
                 client.add_request(message_dict['computer_id'], message_dict)
 
-            print(message_dict['action'])
+            # print(message_dict['action'])
             util.set_id(message_dict['id'])
 
             # handle request from client
