@@ -84,7 +84,10 @@ def generate_comp(d):
     comp_id = ''.join(
         random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(64))
     # sends to the client new computer id
-    client_socket.send(bytes(comp_id, 'utf-8'))
+    try:
+        client_socket.send(bytes(comp_id, 'utf-8'))
+    except Exception:
+        pass
     com = Computer(comp_id)
     # add new client's computer to client value in clients dict
     clients[d].add_new_computer(com)
@@ -156,7 +159,10 @@ if __name__ == '__main__':
                 # set util object id to client id
                 util.set_id(client_id)
                 # send to client its new id
-                client_socket.send(bytes(client_id, 'utf-8'))
+                try:
+                    client_socket.send(bytes(client_id, 'utf-8'))
+                except Exception:
+                    pass
                 # save new client to clients dict
                 clients[client_id] = Client(client_id)
                 generate_comp(client_id)

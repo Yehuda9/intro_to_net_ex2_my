@@ -228,7 +228,10 @@ class Utils:
         :param num_of_requests: number of actions we will send
         """
         _message = self.generate_message('move file', path, 0, num_of_requests, new_path)
-        self.get_socket().send(_message)
+        try:
+            self.get_socket().send(_message)
+        except Exception:
+            pass
 
     def send_remove_file(self, path, num_of_requests=1):
         """
@@ -237,7 +240,10 @@ class Utils:
         :param num_of_requests: number of actions we will send
         """
         _message = self.generate_message('remove file', path, 0, num_of_requests)
-        self.get_socket().send(_message)
+        try:
+            self.get_socket().send(_message)
+        except Exception:
+            pass
 
     def upload_path(self, path, num_of_requests=1):
         """
@@ -246,7 +252,10 @@ class Utils:
         :param num_of_requests: number of actions we will send
         """
         _message = self.generate_message('upload path', path, 0, num_of_requests)
-        self.get_socket().send(_message)
+        try:
+            self.get_socket().send(_message)
+        except Exception:
+            pass
 
     def upload_file(self, path_to_file, num_of_requests=1):
         """
@@ -260,14 +269,20 @@ class Utils:
             size = 0
         _message = self.generate_message('upload file', path_to_file, size, num_of_requests)
         # sends the file's information
-        self.get_socket().send(_message)
+        try:
+            self.get_socket().send(_message)
+        except Exception:
+            pass
         # sends the file
         f = None
         try:
             f = open(path_to_file, 'rb')
             b = f.read()
             if b != b'':
-                self.get_socket().send(b)
+                try:
+                    self.get_socket().send(b)
+                except Exception:
+                    pass
             f.close()
         except IOError as e:
             pass

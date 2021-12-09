@@ -276,7 +276,10 @@ if __name__ == '__main__':
         os.makedirs(path_to_folder, exist_ok=True)
         message = util.generate_message('exists client', path_to_folder, 0, 1)
         # sends to the server request to get id for the current computer
-        util.get_socket().send(message)
+        try:
+            util.get_socket().send(message)
+        except Exception:
+            pass
         computer_id = util.get_socket().recv(64).decode('utf-8')
         util.set_client_computer_id(computer_id)
         # sync the folder from the server
@@ -288,7 +291,10 @@ if __name__ == '__main__':
     else:
         f = util.get_size_of_dir(path_to_folder)
         message = util.generate_message('new client', path_to_folder, 0, f + 1)
-        util.get_socket().send(message)
+        try:
+            util.get_socket().send(message)
+        except Exception:
+            pass
         # gets id for the client
         my_id = util.get_socket().recv(128).decode('utf-8')
         util.set_id(my_id)
