@@ -125,7 +125,13 @@ class Utils:
         if self.__connection == 'client':
             self.__ignore_wd[_message_dict['path']] = (time.time(), 'open')
         os.makedirs(os.path.dirname(_message_dict['path']), exist_ok=True)
-        f = open(_message_dict['path'], 'wb')
+        f = None
+        try:
+            f = open(_message_dict['path'], 'wb')
+        except Exception:
+            if self.__connection == 'client':
+                self.__ignore_wd[_message_dict['path']] = (time.time(), 'close')
+            return
         """if int(_message_dict['size_of_data']) != len(d):
             print('read error!!!!!!!!!!!!!!!', int(_message_dict['size_of_data']) - len(d))"""
         try:
