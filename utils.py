@@ -283,7 +283,7 @@ class Utils:
         :param path: the directory path
         """
         # size of dir to upload
-        n = self.get_size_of_dir(path)[2]
+        n = self.get_size_of_dir(path)
         for path, dirs, files in os.walk(path):
             # iterating threw all directories
             for d in dirs:

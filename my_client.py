@@ -150,7 +150,7 @@ class Handler(FileSystemEventHandler):
             util.get_socket().connect((server_IP, server_port))
             # sends the file or the directory - accordingly
             if os.path.isdir(event.src_path):
-                util.upload_path(event.src_path, util.get_size_of_dir(event.src_path)[2])
+                util.upload_path(event.src_path, util.get_size_of_dir(event.src_path))
             else:
                 util.upload_file(event.src_path)
             util.get_socket().close()
@@ -178,7 +178,7 @@ class Handler(FileSystemEventHandler):
                 util.set_socket(socket(AF_INET, SOCK_STREAM))
                 util.get_socket().connect((server_IP, server_port))
                 # in modify we will tell the server to delete the file and then upload new ine
-                util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2] * 2)
+                util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path) * 2)
                 util.upload_file(event.src_path)
                 util.get_socket().close()
         self.__in_event = False
@@ -203,7 +203,7 @@ class Handler(FileSystemEventHandler):
             util.set_socket(socket(AF_INET, SOCK_STREAM))
             # sends the path to delete to the server
             util.get_socket().connect((server_IP, server_port))
-            util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2])
+            util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path))
             util.get_socket().close()
         self.__in_event = False
 
@@ -220,7 +220,7 @@ class Handler(FileSystemEventHandler):
         # sends the source path and the destination path to the server
         util.set_socket(socket(AF_INET, SOCK_STREAM))
         util.get_socket().connect((server_IP, server_port))
-        num_of_requests = util.get_size_of_dir(event.dest_path)[2]
+        num_of_requests = util.get_size_of_dir(event.dest_path)
         util.send_move_file(event.src_path, event.dest_path, num_of_requests)
         util.get_socket().close()
         self.__in_event = False
@@ -281,7 +281,6 @@ if __name__ == '__main__':
     if len(sys.argv) == 6:
         my_id = sys.argv[5]
         util.set_id(my_id)
-        s, d, f = util.get_size_of_dir(path_to_folder)
         util.set_rel_folder_name(path_to_folder)
         message = util.generate_message('exists client', path_to_folder, 0, 1)
         # sends to the server request to get id for the current computer
@@ -295,8 +294,8 @@ if __name__ == '__main__':
         util.get_ignore_wd().clear()
     # if it is a new client
     else:
-        s, d, f = util.get_size_of_dir(path_to_folder)
-        message = util.generate_message('new client', path_to_folder, s, f + 1)
+        f = util.get_size_of_dir(path_to_folder)
+        message = util.generate_message('new client', path_to_folder,0, f + 1)
         util.get_socket().send(message)
         # gets id for the client
         my_id = util.get_socket().recv(128).decode('utf-8')
