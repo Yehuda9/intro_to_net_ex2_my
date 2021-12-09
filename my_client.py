@@ -1,12 +1,10 @@
-import os
 import sys
-import time
 from socket import socket, AF_INET, SOCK_STREAM
 
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
-import utils
+from utils import *
 
 
 class Watcher:
@@ -247,7 +245,7 @@ def handle_req():
             elif action == 'remove file':
                 util.remove_file(message_dict)
             elif action == 'upload path':
-                util.get_path(message_dict)
+                util.make_path(message_dict)
             elif action == 'move file':
                 util.get_ignore_wd()[message_dict['path']] = (time.time(), 'open')
                 util.get_ignore_wd()[message_dict['new_path']] = (time.time(), 'open')
@@ -275,7 +273,7 @@ if __name__ == '__main__':
     time_between_syncs = sys.argv[4]
     my_id = '0'
     # create util instance for this client
-    util = utils.Utils('client', socket(AF_INET, SOCK_STREAM), path_to_folder, my_id)
+    util = Utils('client', socket(AF_INET, SOCK_STREAM), path_to_folder, my_id)
     util.get_socket().connect((server_IP, server_port))
     # checks if we connected from exist client
     if len(sys.argv) == 6:
@@ -305,7 +303,7 @@ if __name__ == '__main__':
         computer_id = util.get_socket().recv(64).decode('utf-8')
         util.set_client_computer_id(computer_id)
         # sync the folder to the server
-        util.upload_dir_to_server(path_to_folder)
+        util.send_dir(path_to_folder)
     # creates Watcher instance and activate the watchdog
     w = Watcher()
     w.run(time_between_syncs)

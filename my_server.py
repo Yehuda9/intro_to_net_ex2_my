@@ -3,7 +3,6 @@ import string
 import sys
 from socket import socket, AF_INET, SOCK_STREAM
 
-import utils
 from utils import *
 
 
@@ -28,8 +27,7 @@ class Client:
         """
         self.__computers[comp.get_id()] = comp
 
-    # todo: change name to id - get_computer_by_id
-    def get_computer_at_i(self, comp_id):
+    def get_computer_by_id(self, comp_id):
         return self.__computers[comp_id]
 
     def add_request(self, comp_id, req):
@@ -97,7 +95,7 @@ def send_changes(message_dict):
     send all changes in the computers list to the client and clear the list
     :param message_dict: message_dict
     """
-    comp = clients[message_dict['id']].get_computer_at_i(message_dict['computer_id'])
+    comp = clients[message_dict['id']].get_computer_by_id(message_dict['computer_id'])
     # num of changes from server is length of requests list
     n = len(comp.get_requests())
     for req in comp.get_requests():
@@ -123,7 +121,7 @@ if __name__ == '__main__':
     server = socket(AF_INET, SOCK_STREAM)
     server.bind(('', my_port))
     server.listen(5)
-    util = utils.Utils('server', None)
+    util = Utils('server', None)
     clients = {}
 
     while True:
@@ -167,7 +165,7 @@ if __name__ == '__main__':
                     break
                 generate_comp(message_dict['id'])
                 # send client folder from server to client
-                util.upload_dir_to_server(os.path.join('.' + os.path.sep + 'DB', message_dict['id']))
+                util.send_dir(os.path.join('.' + os.path.sep + 'DB', message_dict['id']))
             if 'upload file' == message_dict['action']:
                 # get file from client
                 util.get_file(message_dict)
@@ -176,7 +174,7 @@ if __name__ == '__main__':
                 util.remove_file(message_dict)
             if 'upload path' == message_dict['action']:
                 # get path name from client and create it
-                util.get_path(message_dict)
+                util.make_path(message_dict)
             if 'move file' == message_dict['action']:
                 # move file or directory location
                 a = message_dict['path'].replace('\\\\', '\\')

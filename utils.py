@@ -138,8 +138,7 @@ class Utils:
             finally:
                 self.update_ignore_wd(_message_dict['path'], 'close')
 
-    # todo: change name to : make_path
-    def get_path(self, _message_dict):
+    def make_path(self, _message_dict):
         """
         :param _message_dict: message_dict
         """
@@ -278,8 +277,7 @@ class Utils:
             except:
                 pass
 
-    # todo: change function name
-    def upload_dir_to_server(self, path):
+    def send_dir(self, path):
         """
         sends all directory
         :param path: the directory path
