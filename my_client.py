@@ -51,13 +51,14 @@ class Watcher:
             handle_req()
         except Exception as e:
             util.set_socket(socket(AF_INET, SOCK_STREAM))
-            print('connect requests_updates')
             try:
+                print('connect requests_updates')
                 util.get_socket().connect((server_IP, server_port))
                 util.get_socket().send(m)
                 handle_req()
             except:
-                pass
+                print('failed- connect requests_updates')
+                #pass
             util.get_socket().close()
         self.event_handler.set_in_req(False)
         print("finish requests_updates")
@@ -123,7 +124,7 @@ class Handler(FileSystemEventHandler):
                 return True
         return False"""
 
-    def on_any_event(self, event):
+    def wait_for_handle_req_fin(self):
         i = 0
         while self.__in_req:
             i += 1
@@ -131,7 +132,6 @@ class Handler(FileSystemEventHandler):
             continue
 
     def on_created(self, event):
-        self.__in_event = True
         print(util.get_ignore_wd())
         # self.is_open(event.src_path)
         p = event.src_path
@@ -140,6 +140,8 @@ class Handler(FileSystemEventHandler):
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
                     0] + 3 < time.time()):
+            self.wait_for_handle_req_fin()
+            self.__in_event = True
             util.set_socket(socket(AF_INET, SOCK_STREAM))
             print('connect on_created')
             print("Received created event - %s." % p)
@@ -153,7 +155,6 @@ class Handler(FileSystemEventHandler):
         self.__in_event = False
 
     def on_modified(self, event):
-        self.__in_event = True
         print(util.get_ignore_wd())
         # self.is_open(event.src_path)
         p = event.src_path
@@ -162,6 +163,8 @@ class Handler(FileSystemEventHandler):
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
                     0] + 3 < time.time()):
+            self.wait_for_handle_req_fin()
+            self.__in_event = True
             print("Received modified event - %s." % p)
             if not os.path.isdir(event.src_path):
                 util.set_socket(socket(AF_INET, SOCK_STREAM))
@@ -173,7 +176,6 @@ class Handler(FileSystemEventHandler):
         self.__in_event = False
 
     def on_deleted(self, event):
-        self.__in_event = True
         print(util.get_ignore_wd())
         p = event.src_path
         # p = p.replace('\\', '\\\\')
@@ -181,6 +183,8 @@ class Handler(FileSystemEventHandler):
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
                     0] + 3 < time.time()):
+            self.wait_for_handle_req_fin()
+            self.__in_event = True
             util.set_socket(socket(AF_INET, SOCK_STREAM))
             print("Received delete event - %s." % p)
             print('connect on_deleted')
@@ -190,15 +194,16 @@ class Handler(FileSystemEventHandler):
         self.__in_event = False
 
     def on_moved(self, event):
+        self.wait_for_handle_req_fin()
         self.__in_event = True
         util.set_socket(socket(AF_INET, SOCK_STREAM))
         print('connect on_moved')
         util.get_socket().connect((server_IP, server_port))
         print("Received moved event - %s." % event.src_path)
         print("Received moved event - %s." % event.dest_path)
-        num_of_requests = util.get_size_of_dir(event.src_path)[2] + 1
+        num_of_requests = util.get_size_of_dir(event.src_path)[2]
         # upload_file(server_socket, event.dest_path, get_size_of_dir(event.src_path)[2])
-        util.send_move_file(event.src_path, event.dest_path)
+        util.send_move_file(event.src_path, event.dest_path,num_of_requests)
         """if os.path.isdir(event.dest_path):
             util.send_remove_file(event.src_path, num_of_requests)
             # upload_dir_to_server(server_socket, event.dest_path)
@@ -290,7 +295,8 @@ def handle_req():
                 util.remove_file(message_dict)
             elif 'upload path' in message_dict['action']:
                 util.get_path(message_dict)
-            if 'move_file' == message_dict['action']:
+            if 'move file' == message_dict['action']:
+                print('rename:', message_dict['path'], message_dict['new_path'])
                 util.get_ignore_wd()[message_dict['path']] = (time.time(), 'open')
                 util.get_ignore_wd()[message_dict['new_path']] = (time.time(), 'open')
                 os.renames(message_dict['path'], message_dict['new_path'])
