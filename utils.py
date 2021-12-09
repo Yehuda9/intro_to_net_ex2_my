@@ -7,9 +7,10 @@ from os.path import getsize
 class Utils:
     def __init__(self, connection, s, rel_folder_name='', id='0', comp_id='0'):
         """
+        Util's constructor
         :param connection: server or client
         :param s: socket
-        :param rel_folder_name: name relative folder name
+        :param rel_folder_name: name of relative folder name
         :param id: client id
         :param comp_id: computer id
         """
@@ -51,7 +52,7 @@ class Utils:
 
     def recv_all(self, n):
         """
-        :param n: number of bytes o receive
+        :param n: number of bytes to receive
         :return: n bytes received from socket
         """
         data = b''
@@ -93,8 +94,8 @@ class Utils:
 
     def remove_dir(self, path):
         """
-        recursively remove directory
-        :param path: path to directory
+        remove directory recursively
+        :param path: path to directory we need to remove
         """
         if os.path.exists(path):
             for root, dirs, files in os.walk(path):
@@ -139,6 +140,7 @@ class Utils:
             finally:
                 self.update_ignore_wd(_message_dict['path'], 'close')
 
+    # todo: change name to : make_path
     def get_path(self, _message_dict):
         """
         :param _message_dict: message_dict
@@ -149,7 +151,7 @@ class Utils:
 
     def get_file(self, _message_dict):
         """
-
+        create file we received
         :param _message_dict: message_dict
         """
         # receive file from socket
@@ -163,6 +165,7 @@ class Utils:
         except Exception:
             self.update_ignore_wd(_message_dict['path'], 'close')
             return
+        # write the file:
         try:
             f.write(d)
         except Exception:
@@ -172,7 +175,7 @@ class Utils:
 
     def get_size_of_dir(self, path):
         """
-        :param path:
+        :param path:path to the dor we want to check
         :return: number of all files and directories in path, recursively
         """
         f = 0

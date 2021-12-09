@@ -22,14 +22,19 @@ class Client:
         return self.__computers
 
     def add_new_computer(self, comp):
+        """
+        adds new computer to the computers array that the server saves
+        :param comp: the instance of the computer
+        """
         self.__computers[comp.get_id()] = comp
 
+    # todo: change name to id - get_computer_by_id
     def get_computer_at_i(self, comp_id):
         return self.__computers[comp_id]
 
     def add_request(self, comp_id, req):
         """
-        add request to all computers accept computer id
+        add request to all computer's request array accept computer id
         :param comp_id: computer id
         :param req: request as dict
         """
@@ -50,6 +55,10 @@ class Computer:
         return self.__id
 
     def get_requests(self):
+        """
+        return all request that the computer need to update
+        :return: request array
+        """
         return self.__requests
 
     def add_new_request(self, req):
@@ -76,7 +85,7 @@ def generate_comp(d):
     # generate id for client computer
     comp_id = ''.join(
         random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(64))
-    # send to client its new computer id
+    # sends to the client new computer id
     client_socket.send(bytes(comp_id, 'utf-8'))
     com = Computer(comp_id)
     # add new client's computer to client value in clients dict
@@ -85,7 +94,7 @@ def generate_comp(d):
 
 def send_changes(message_dict):
     """
-    send to client all the changes in its list and clear list
+    send all changes in the computers list to the client and clear the list
     :param message_dict: message_dict
     """
     comp = clients[message_dict['id']].get_computer_at_i(message_dict['computer_id'])
@@ -108,6 +117,7 @@ def send_changes(message_dict):
 
 if __name__ == '__main__':
     path_to_DB = os.path.join("./", "DB/")
+    # creates the dir
     os.makedirs(os.path.dirname(path_to_DB), exist_ok=True)
     my_port = int(sys.argv[1])
     server = socket(AF_INET, SOCK_STREAM)
@@ -151,19 +161,19 @@ if __name__ == '__main__':
                 # save new client to clients dict
                 clients[client_id] = Client(client_id)
                 generate_comp(client_id)
-            if 'exists client' in message_dict['action']:
+            if 'exists client' == message_dict['action']:
                 if not message_dict['id'] in clients.keys():
                     break
                 generate_comp(message_dict['id'])
                 # send client folder from server to client
                 util.upload_dir_to_server(os.path.join('.' + os.path.sep + 'DB', message_dict['id']))
-            if 'upload file' in message_dict['action']:
+            if 'upload file' == message_dict['action']:
                 # get file from client
                 util.get_file(message_dict)
             if 'remove file' == message_dict['action']:
                 # remove file or directory from server
                 util.remove_file(message_dict)
-            if 'upload path' in message_dict['action']:
+            if 'upload path' == message_dict['action']:
                 # get path name from client and create it
                 util.get_path(message_dict)
             if 'move file' == message_dict['action']:
@@ -180,6 +190,7 @@ if __name__ == '__main__':
 
             if i == num_of_requests - 1:
                 break
+            # gets the next message
             # receive length of message
             length = util.recv_all(16)
             if not length:
