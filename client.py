@@ -281,10 +281,7 @@ if __name__ == '__main__':
     else:
         f = util.get_size_of_dir(path_to_folder)
         message = util.generate_message('new client', path_to_folder, 0, f + 1)
-        try:
-            util.get_socket().send(message)
-        except Exception:
-            pass
+        util.get_socket().send(message)
         # gets id for the client
         my_id = util.get_socket().recv(128).decode('utf-8')
         util.set_id(my_id)
