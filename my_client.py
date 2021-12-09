@@ -134,7 +134,7 @@ class Handler(FileSystemEventHandler):
         if not self.is_start_with(p) or (
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
-                    0] + 3 < time.time()):
+                    0] + 2 < time.time()):
             # checks if the computer isn't handling updates at the moment
             self.wait_for_handle_req_fin()
             self.__in_event = True
@@ -160,7 +160,7 @@ class Handler(FileSystemEventHandler):
         if not self.is_start_with(p) or (
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
-                    0] + 3 < time.time()):
+                    0] + 2 < time.time()):
             # checks if the computer isn't handling updates at the moment
             self.wait_for_handle_req_fin()
             self.__in_event = True
@@ -186,7 +186,7 @@ class Handler(FileSystemEventHandler):
         if not self.is_start_with(p) or (
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
-                    0] + 3 < time.time()):
+                    0] + 2 < time.time()):
             # checks if the computer isn't handling updates at the moment
             self.wait_for_handle_req_fin()
             self.__in_event = True
