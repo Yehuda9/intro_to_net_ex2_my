@@ -152,6 +152,7 @@ if __name__ == '__main__':
             if 'new client' in message_dict['action']:
                 client_id = ''.join(
                     random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(128))
+                print(client_id)
                 # make directory in the name of client id
                 os.mkdir(os.path.join(path_to_DB, client_id))
                 # set util object id to client id
