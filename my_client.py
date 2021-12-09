@@ -2,51 +2,32 @@ import os
 import sys
 import time
 from socket import socket, AF_INET, SOCK_STREAM
-
-import watchdog
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 import utils
 
-
-class PausingObserver(watchdog.observers.Observer):
-    def __init__(self, *args):
-        Observer.__init__(self, *args)
-        self._is_paused = False
-
-    def dispatch_events(self, *args, **kwargs):
-        if not getattr(self, '_is_paused', False):
-            super(PausingObserver, self).dispatch_events(*args, **kwargs)
-
-    def pause(self):
-        pass
-
-    def resume(self):
-        time.sleep(self.timeout)  # allow interim events to be queued
-        self.event_queue.queue.clear()
-        self._is_paused = False
-
-    """@contextlib.contextmanager
-    def ignore_events(self):
-        self.pause()
-        yield
-        self.resume()
-"""
-
-
 class Watcher:
 
     def __init__(self):
+        """
+        Watcher constructor.
+        initialize observer, event handler, and check if we are getting request from the server now
+        """
         self.event_handler = None
         self.observer = Observer()
         self.__in_req = False
 
     def requests_updates(self):
+        """
+        request updates from the server
+        """
         print("start requests_updates")
         self.event_handler.set_in_req(True)
+        # m is the message we will sent to the server to get the updates
         m = util.generate_message('requests_updates')
         try:
+            # if there is an open socket - use it
             util.get_socket().send(m)
             handle_req()
         except Exception as e:
@@ -57,13 +38,17 @@ class Watcher:
                 util.get_socket().send(m)
                 handle_req()
             except:
-                print('failed- connect requests_updates')
-                #pass
+                pass
             util.get_socket().close()
+        # updates we finished with the updates from the server
         self.event_handler.set_in_req(False)
         print("finish requests_updates")
 
-    def run(self):
+    def run(self, t):
+        """
+        run function activate the watch dog and in addition, every 5 seconds ask the server for updates
+        """
+        # activates watch dog
         self.event_handler = Handler()
         self.observer.schedule(self.event_handler, path_to_folder, recursive=True)
         self.observer.start()
@@ -72,59 +57,71 @@ class Watcher:
             while True:
                 time.sleep(1)
                 i += 1
-                if i == 5:
+                if i == t:
                     i = 0
                     copy = util.get_ignore_wd().copy()
+                    # delete the action that we already did from the dictionary of actions we got from the server
                     for a in copy.keys():
-                        if copy[a][1] == 'close' \
-                                and copy[a][0] + 3 < time.time():
+                        if copy[a][1] == 'close' and copy[a][0] + 3 < time.time():
                             util.get_ignore_wd().pop(a)
                     print(self.event_handler.get_in_event(), self.event_handler.get_in_req())
+                    # checks if we can ask for updates without overriding another socket
                     if not self.event_handler.get_in_event() and not self.event_handler.get_in_req():
                         self.requests_updates()
         except KeyboardInterrupt:
-            print('stop Watcher line 27')
             self.observer.stop()
         self.observer.join()
 
 
 class Handler(FileSystemEventHandler):
     def __init__(self):
+        """
+        Handler constructor- initialize if we are in event or getting requests from the server at the moment
+        """
         self.__in_event = False
         self.__in_req = False
 
     def get_in_req(self):
+        """
+        getter for checking if we are getting requests from the server at the moment
+        :return: true/false
+        """
         return self.__in_req
 
     def set_in_req(self, b):
+        """
+        setter for updating if we are getting requests from the server at the moment
+        """
         self.__in_req = b
 
+    def get_in_event(self):
+        """
+        getter for checking if we are are handling changes in our local directory
+        :return: true/false
+        """
+        return self.__in_event
+
     def set_in_event(self, b):
+        """
+        setter for updating if we are handling changes in our local directory
+        """
         self.__in_event = b
 
     def is_start_with(self, p):
+        """
+        checks if the path is a substring of path we need to ignore at the moment
+        :param p: path
+        :return: true if it's substring and false if not
+        """
         for key in util.get_ignore_wd().keys():
             if key.startswith(p):
                 return True
         return False
 
-    def get_in_event(self):
-        return self.__in_event
-
-    def is_open(self, p):
-        historical_size = -1
-        while historical_size != os.path.getsize(p):
-            historical_size = os.path.getsize(p)
-            time.sleep(0.05)
-        """if os.path.exists(p):
-            try:
-                os.rename(p, p)
-                return False
-            except OSError as e:
-                return True
-        return False"""
-
     def wait_for_handle_req_fin(self):
+        """
+        enters while loop until the we will finish handling all updates we got from the server
+        """
         i = 0
         while self.__in_req:
             i += 1
@@ -132,171 +129,126 @@ class Handler(FileSystemEventHandler):
             continue
 
     def on_created(self, event):
+        """
+        sends the the file/directory that has been created to the server (if needed)
+        :param event: event for creating file/directory
+        """
         print(util.get_ignore_wd())
-        # self.is_open(event.src_path)
         p = event.src_path
-        # p = p.replace('\\', '\\\\')
+        # checks if we need to send the event or ignore it (if its an event we got from the server in the last 3
+        # seconds after another computer did it)
         if not self.is_start_with(p) or (
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
-                    0] + 5 < time.time()):
+                    0] + 3 < time.time()):
+            # checks if the computer isn't handling updates at the moment
             self.wait_for_handle_req_fin()
             self.__in_event = True
             util.set_socket(socket(AF_INET, SOCK_STREAM))
             print('connect on_created')
             print("Received created event - %s." % p)
             util.get_socket().connect((server_IP, server_port))
+            # sends the file or the directory - accordingly
             if os.path.isdir(event.src_path):
-                # upload_dir_to_server(server_socket, event.src_path)
-                util.upload_path(event.src_path, util.get_size_of_dir(event.src_path))
+                util.upload_path(event.src_path, util.get_size_of_dir(event.src_path)[2])
             else:
                 util.upload_file(event.src_path)
             util.get_socket().close()
         self.__in_event = False
 
     def on_modified(self, event):
+        """
+        sends the the file/directory that has been modified to the server (if needed)
+        :param event: event for modifying file/directory
+        """
         print(util.get_ignore_wd())
-        # self.is_open(event.src_path)
         p = event.src_path
-        # p = p.replace('\\', '\\\\')
+        # checks if we need to send the event or ignore it (if its an event we got from the server in the last 3
+        # seconds after another computer did it)
         if not self.is_start_with(p) or (
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
-                    0] + 5 < time.time()):
+                    0] + 3 < time.time()):
+            # checks if the computer isn't handling updates at the moment
             self.wait_for_handle_req_fin()
             self.__in_event = True
             print("Received modified event - %s." % p)
+            # check if the modify event is on file (we don't need to modify directory)
             if not os.path.isdir(event.src_path):
                 util.set_socket(socket(AF_INET, SOCK_STREAM))
-                print('connect on_modified')
                 util.get_socket().connect((server_IP, server_port))
-                util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path) * 2)
+                # in modify we will tell the server to delete the file and then upload new ine
+                util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2] * 2)
                 util.upload_file(event.src_path)
                 util.get_socket().close()
         self.__in_event = False
 
     def on_deleted(self, event):
+        """
+        sends the the path to the file/directory that has been deleted to the server (if needed)
+        :param event: event for deleting file/directory
+        """
         print(util.get_ignore_wd())
         p = event.src_path
-        # p = p.replace('\\', '\\\\')
+        # checks if we need to send the event or ignore it (if its an event we got from the server in the last 3
+        # seconds after another computer did it)
         if not self.is_start_with(p) or (
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
-                    0] + 5 < time.time()):
+                    0] + 3 < time.time()):
+            # checks if the computer isn't handling updates at the moment
             self.wait_for_handle_req_fin()
             self.__in_event = True
-            util.set_socket(socket(AF_INET, SOCK_STREAM))
             print("Received delete event - %s." % p)
-            print('connect on_deleted')
+            util.set_socket(socket(AF_INET, SOCK_STREAM))
+            # sends the path to delete to the server
             util.get_socket().connect((server_IP, server_port))
-            util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path))
+            util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path)[2])
             util.get_socket().close()
         self.__in_event = False
 
     def on_moved(self, event):
+        """
+        sends the the path to the file/directory that has been moved to the server
+        :param event: event for moving file/directory
+        """
+        # checks if the computer isn't handling updates at the moment
         self.wait_for_handle_req_fin()
         self.__in_event = True
-        util.set_socket(socket(AF_INET, SOCK_STREAM))
-        print('connect on_moved')
-        util.get_socket().connect((server_IP, server_port))
         print("Received moved event - %s." % event.src_path)
         print("Received moved event - %s." % event.dest_path)
-        num_of_requests = util.get_size_of_dir(event.dest_path)
-        # upload_file(server_socket, event.dest_path, get_size_of_dir(event.src_path)[2])
+        # sends the source path and the destination path to the server
+        util.set_socket(socket(AF_INET, SOCK_STREAM))
+        util.get_socket().connect((server_IP, server_port))
+        num_of_requests = util.get_size_of_dir(event.dest_path)[2]
         util.send_move_file(event.src_path, event.dest_path, num_of_requests)
-        """if os.path.isdir(event.dest_path):
-            util.send_remove_file(event.src_path, num_of_requests)
-            # upload_dir_to_server(server_socket, event.dest_path)
-            util.upload_path(event.dest_path, util.get_size_of_dir(event.src_path)[2])
-        else:
-            util.send_remove_file(event.src_path, num_of_requests)
-            util.upload_file(event.dest_path)"""
         util.get_socket().close()
         self.__in_event = False
 
 
-"""
-def get_size_of_dir(path):
-    s = 0
-    d = 0
-    f = 0
-    if os.path.isdir(path):
-        for root, dirs, files in os.walk(path):
-            d += len(dirs)
-            f += len(files) + len(dirs)
-            s += sum(getsize(os.path.join(root, name)) for name in files)
-        return s, d, f
-    return 0, 0, 1
-
-"""
-"""def generate_message(action, path='', size_of_dirs=0, size_of_data=0, num_of_requests=1):
-    if action == 'upload file' or action == 'upload path' or action == 'remove file':
-        r_path = path.split(rel_folder_name, 1)[1].lstrip(os.path.sep)
-        path = os.path.join(rel_folder_name, r_path)
-    elif action == 'new client':
-        path = os.path.split(path)[-1]
-        # path = rel_folder_name
-    m = "action:" + action + '\n' + 'id:' + my_id + '\n' + 'path:' + path + '\n' + 'size_of_dirs:' + str(
-        size_of_dirs) + '\n' + 'size_of_data:' + str(size_of_data) + '\n' + 'num_of_requests:' + str(num_of_requests)
-    m = bytes(m, 'utf-8')
-    size = bytes(str(len(m)).zfill(16), 'utf-8')
-    to_send = size + m
-    print(to_send)
-    return to_send
-
-
-def remove_file(server_socket, path, num_of_requests=1):
-    _message = generate_message('remove file', path, 0, 0, num_of_requests)
-    server_socket.send(_message)
-
-
-def upload_path(server_socket, path, num_of_requests=1):
-    _message = generate_message('upload path', path, 0, 0, num_of_requests)
-    server_socket.send(_message)
-
-
-def upload_file(server_socket, path_to_file, num_of_requests=1):
-    _message = generate_message('upload file', path_to_file, 0, os.path.getsize(path_to_file), num_of_requests)
-    # print('file size: ', os.path.getsize(path_to_file))
-    server_socket.send(_message)
-    with open(path_to_file, 'rb') as f:
-        b = f.read()
-        if b != b'':
-            # print('len(b): ', len(b))
-            server_socket.send(b)
-
-"""
-"""def upload_dir_to_server(server_socket, path):
-    server_socket.send(generate_message('upload path', path, 0, 0, get_size_of_dir(path)[2] + 1))
-    for path, dirs, files in os.walk(path):
-        for d in dirs:
-            path_to_file = os.path.join(path, d)
-            # print(path_to_file)
-            upload_path(server_socket, path_to_file)
-        for file in files:
-            path_to_file = os.path.join(path, file)
-            # print(path_to_file)
-            upload_file(server_socket, path_to_file)
-
-"""
-
-
 def handle_req():
+    """
+    handling the updated the client got from the server
+    """
+    # first, gets the length of the next message
     length = util.recv_all(16)
     if length is not None:
         length = length.decode('utf-8')
+        # gets the information about the file we need to get
         message = util.recv_all(int(length))
+        # parse the message
         message_dict = util.parse_message(message)
         num_of_requests = int(message_dict['num_of_requests'])
+        # iterating threw all updates
         for i in range(num_of_requests):
-            if 'upload file' in message_dict['action']:
+            action = message_dict['action']
+            if action == 'upload file':
                 util.get_file(message_dict)
-            if 'remove file' == message_dict['action']:
+            elif action == 'remove file':
                 util.remove_file(message_dict)
-            elif 'upload path' in message_dict['action']:
+            elif action == 'upload path':
                 util.get_path(message_dict)
-            if 'move file' == message_dict['action']:
-                print('rename:', message_dict['path'], message_dict['new_path'])
+            elif action == 'move file':
                 util.get_ignore_wd()[message_dict['path']] = (time.time(), 'open')
                 util.get_ignore_wd()[message_dict['new_path']] = (time.time(), 'open')
                 os.renames(message_dict['path'], message_dict['new_path'])
@@ -305,6 +257,7 @@ def handle_req():
 
             if i == num_of_requests - 1:
                 break
+            # gets the next update
             length = util.recv_all(16)
             if not length:
                 break
@@ -314,37 +267,45 @@ def handle_req():
 
 
 if __name__ == '__main__':
+    # saves argunets to main
     server_IP = sys.argv[1]
     server_port = int(sys.argv[2])
     path_to_folder = sys.argv[3]
     rel_folder_name = path_to_folder.split(os.sep)[-1]
     time_between_syncs = sys.argv[4]
     my_id = '0'
+    # create util instance for this client
     util = utils.Utils('client', socket(AF_INET, SOCK_STREAM), path_to_folder, my_id)
     util.get_socket().connect((server_IP, server_port))
+    # checks if we connected from exist client
     if len(sys.argv) == 6:
         my_id = sys.argv[5]
         util.set_id(my_id)
-        f = util.get_size_of_dir(path_to_folder)
+        s, d, f = util.get_size_of_dir(path_to_folder)
         util.set_rel_folder_name(path_to_folder)
-        message = util.generate_message('exists client', path_to_folder, 0, 0, 1)
+        message = util.generate_message('exists client', path_to_folder, 0, 1)
+        # sends to the server request to get id for the current computer
         util.get_socket().send(message)
         computer_id = util.get_socket().recv(64).decode('utf-8')
         util.set_client_computer_id(computer_id)
+        # sync the folder from the server
         handle_req()
         util.get_socket().close()
-        # create new folder and get all the files from the server.
+        # clear all requests we got from the server for syncing
+        util.get_ignore_wd().clear()
+    # if it is a new client
     else:
-        f = util.get_size_of_dir(path_to_folder)
-        # f = num of files and subdirs + new client + rootdir
-        message = util.generate_message('new client', path_to_folder, 0, f + 1)
+        s, d, f = util.get_size_of_dir(path_to_folder)
+        message = util.generate_message('new client', path_to_folder, s, f + 1)
         util.get_socket().send(message)
+        # gets id for the client
         my_id = util.get_socket().recv(128).decode('utf-8')
         util.set_id(my_id)
+        # gets id for the computer
         computer_id = util.get_socket().recv(64).decode('utf-8')
         util.set_client_computer_id(computer_id)
-        # print(my_id)
+        # sync the folder to the server
         util.upload_dir_to_server(path_to_folder)
-    util.get_ignore_wd().clear()
+    # creates Watcher instance and activate the watch dog
     w = Watcher()
-    w.run()
+    w.run(time_between_syncs)

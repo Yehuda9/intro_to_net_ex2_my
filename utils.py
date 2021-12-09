@@ -183,7 +183,17 @@ class Utils:
                 return f
         return 1
 
-    def generate_message(self, action, path='', size_of_dirs=0, size_of_data=0, num_of_requests=1, new_path=''):
+    def generate_message(self, action, path='', size_of_data=0, num_of_requests=1, new_path=''):
+        """
+        generate all messages we need to send according to our protocol
+        :param action: the action we need to do
+        :param path: the path to the file/directory we need to update
+        :param size_of_data: size of the file/directory we want to send
+        :param num_of_requests: number of actions we will send
+        :param new_path: new path (relevant to "move file" action)
+        :return: the message we want to send
+        """
+        # change the path to match the receiver's folder
         if action == 'upload file' or action == 'upload path' or action == 'remove file' or action == 'move file':
             d_path = new_path
             try:
@@ -199,14 +209,10 @@ class Utils:
                     pass
             path = r_path
             new_path = d_path
-            # path = os.path.join(self.__rel_folder_name.split(os.path.sep)[-1], r_path)
-        elif action == 'new client':
-            pass
-            # path = os.path.split(path)[-1]
-            # path = rel_folder_name
-        m = "action:" + action + '\n' + 'id:' + self.__id + '\n' + 'path:' + path + '\n' + 'size_of_dirs:' + str(
-            size_of_dirs) + '\n' + 'size_of_data:' + str(size_of_data) + '\n' + 'num_of_requests:' + str(
+        # combine all information to one message
+        m = "action:" + action + '\n' + 'id:' + self.__id + '\n' + 'path:' + path + '\n' + 'size_of_data:' + str(size_of_data) + '\n' + 'num_of_requests:' + str(
             num_of_requests) + '\n' + 'computer_id:' + self.__client_computer_id + '\n' + 'new_path:' + new_path
+        # change message to bytes, check the length and return it together
         m = bytes(m, 'utf-8')
         size = bytes(str(len(m)).zfill(16), 'utf-8')
         to_send = size + m
@@ -214,32 +220,52 @@ class Utils:
         return to_send
 
     def send_move_file(self, path, new_path, num_of_requests=1):
-        _message = self.generate_message('move file', path, 0, 0, num_of_requests, new_path)
+        """
+        sends the source and destination path of a file that moved
+        :param path: the old path
+        :param new_path: the path we need to move the file to
+        :param num_of_requests: number of actions we will send
+        """
+        _message = self.generate_message('move file', path, 0, num_of_requests, new_path)
         self.get_socket().send(_message)
 
     def send_remove_file(self, path, num_of_requests=1):
-        _message = self.generate_message('remove file', path, 0, 0, num_of_requests)
+        """
+        send the path of the file we want to remove
+        :param path: the file we need to remove
+        :param num_of_requests: number of actions we will send
+        """
+        _message = self.generate_message('remove file', path, 0, num_of_requests)
         self.get_socket().send(_message)
 
     def upload_path(self, path, num_of_requests=1):
-        _message = self.generate_message('upload path', path, 0, 0, num_of_requests)
+        """
+        sends path
+        :param path: the path to send
+        :param num_of_requests: number of actions we will send
+        """
+        _message = self.generate_message('upload path', path, 0, num_of_requests)
         self.get_socket().send(_message)
 
     def upload_file(self, path_to_file, num_of_requests=1):
-        size = 0
+        """
+        sends file
+        :param path_to_file: path to the file we want to send
+        :param num_of_requests: number of changes to send
+        """
         try:
             size = os.path.getsize(path_to_file)
         except FileNotFoundError:
-            pass
-        _message = self.generate_message('upload file', path_to_file, 0, size, num_of_requests)
-        # print('file size: ', os.path.getsize(path_to_file))
+            size = 0
+        _message = self.generate_message('upload file', path_to_file, size, num_of_requests)
+        # sends the file's information
         self.get_socket().send(_message)
+        # sends the file
         f = None
         try:
             f = open(path_to_file, 'rb')
             b = f.read()
             if b != b'':
-                # print('len(b): ', len(b))
                 self.get_socket().send(b)
             f.close()
         except IOError as e:
@@ -250,20 +276,24 @@ class Utils:
             except:
                 pass
 
+    # todo: change function name
     def upload_dir_to_server(self, path):
-        # self.get_socket().send(self.generate_message('upload path', path, 0, 0, self.get_size_of_dir(path)[2] + 1))
-        n = self.get_size_of_dir(path)
+        """
+        sends all directory
+        :param path: the directory path
+        """
+        # size of dir to upload
+        n = self.get_size_of_dir(path)[2]
         for path, dirs, files in os.walk(path):
+            # iterating threw all directories
             for d in dirs:
                 path_to_file = os.path.join(path, d)
-                # print(path_to_file)
+                # send the directory
                 self.upload_path(path_to_file, n)
                 n -= 1
+            # iterating threw all files
             for file in files:
                 path_to_file = os.path.join(path, file)
-                # print(path_to_file)
+                # send the file
                 self.upload_file(path_to_file, n)
                 n -= 1
-        """self.__ignore_wd.clear()
-        print('!!!!!!!!!!!!!!!!!!!!!upload_dir_to_server!!!!!!!!!!!!!!!!!!!')
-        print(self.__ignore_wd)"""
