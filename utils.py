@@ -1,8 +1,6 @@
 import os
 import time
 
-from os.path import getsize
-
 
 class Utils:
     def __init__(self, connection, s, rel_folder_name='', id='0', comp_id='0'):
@@ -213,7 +211,8 @@ class Utils:
             path = r_path
             new_path = d_path
         # combine all information to one message
-        m = "action:" + action + '\n' + 'id:' + self.__id + '\n' + 'path:' + path + '\n' + 'size_of_data:' + str(size_of_data) + '\n' + 'num_of_requests:' + str(
+        m = "action:" + action + '\n' + 'id:' + self.__id + '\n' + 'path:' + path + '\n' + 'size_of_data:' + str(
+            size_of_data) + '\n' + 'num_of_requests:' + str(
             num_of_requests) + '\n' + 'computer_id:' + self.__client_computer_id + '\n' + 'new_path:' + new_path
         # change message to bytes, check the length and return it together
         m = bytes(m, 'utf-8')

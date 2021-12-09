@@ -2,17 +2,18 @@ import os
 import sys
 import time
 from socket import socket, AF_INET, SOCK_STREAM
+
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 import utils
+
 
 class Watcher:
 
     def __init__(self):
         """
         Watcher constructor.
-        initialize observer, event handler, and check if we are getting request from the server now
         """
         self.event_handler = None
         self.observer = Observer()
@@ -24,7 +25,7 @@ class Watcher:
         """
         print("start requests_updates")
         self.event_handler.set_in_req(True)
-        # m is the message we will sent to the server to get the updates
+        # m is the message we will send to the server to get the updates
         m = util.generate_message('requests_updates')
         try:
             # if there is an open socket - use it
@@ -40,15 +41,14 @@ class Watcher:
             except:
                 pass
             util.get_socket().close()
-        # updates we finished with the updates from the server
         self.event_handler.set_in_req(False)
         print("finish requests_updates")
 
     def run(self, t):
         """
-        run function activate the watch dog and in addition, every 5 seconds ask the server for updates
+        run function activate the watchdog, every x seconds ask the server for updates, x is client parameter
         """
-        # activates watch dog
+        # activates watchdog
         self.event_handler = Handler()
         self.observer.schedule(self.event_handler, path_to_folder, recursive=True)
         self.observer.start()
@@ -60,7 +60,7 @@ class Watcher:
                 if i == t:
                     i = 0
                     copy = util.get_ignore_wd().copy()
-                    # delete the action that we already did from the dictionary of actions we got from the server
+                    # delete the non relevant requests from the dictionary of actions we got from the server
                     for a in copy.keys():
                         if copy[a][1] == 'close' and copy[a][0] + 3 < time.time():
                             util.get_ignore_wd().pop(a)
@@ -120,7 +120,7 @@ class Handler(FileSystemEventHandler):
 
     def wait_for_handle_req_fin(self):
         """
-        enters while loop until the we will finish handling all updates we got from the server
+        enters while loop until the we finish handling all updates we got from the server
         """
         i = 0
         while self.__in_req:
@@ -135,8 +135,8 @@ class Handler(FileSystemEventHandler):
         """
         print(util.get_ignore_wd())
         p = event.src_path
-        # checks if we need to send the event or ignore it (if its an event we got from the server in the last 3
-        # seconds after another computer did it)
+        """checks if we need to send the event or ignore it (if its an event we got from the server in the last 3
+        seconds)"""
         if not self.is_start_with(p) or (
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
@@ -163,8 +163,8 @@ class Handler(FileSystemEventHandler):
         """
         print(util.get_ignore_wd())
         p = event.src_path
-        # checks if we need to send the event or ignore it (if its an event we got from the server in the last 3
-        # seconds after another computer did it)
+        """checks if we need to send the event or ignore it (if its an event we got from the server in the last 3
+        seconds)"""
         if not self.is_start_with(p) or (
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
@@ -177,7 +177,7 @@ class Handler(FileSystemEventHandler):
             if not os.path.isdir(event.src_path):
                 util.set_socket(socket(AF_INET, SOCK_STREAM))
                 util.get_socket().connect((server_IP, server_port))
-                # in modify we will tell the server to delete the file and then upload new ine
+                # in modify we will tell the server to delete the file and then upload new one
                 util.send_remove_file(event.src_path, util.get_size_of_dir(event.src_path) * 2)
                 util.upload_file(event.src_path)
                 util.get_socket().close()
@@ -190,8 +190,8 @@ class Handler(FileSystemEventHandler):
         """
         print(util.get_ignore_wd())
         p = event.src_path
-        # checks if we need to send the event or ignore it (if its an event we got from the server in the last 3
-        # seconds after another computer did it)
+        """checks if we need to send the event or ignore it (if its an event we got from the server in the last 3
+                seconds)"""
         if not self.is_start_with(p) or (
                 p in util.get_ignore_wd().keys() and util.get_ignore_wd()[p][1] == 'close'
                 and util.get_ignore_wd()[p][
@@ -234,12 +234,12 @@ def handle_req():
     length = util.recv_all(16)
     if length is not None:
         length = length.decode('utf-8')
-        # gets the information about the file we need to get
+        # gets the information about the update we need to get
         message = util.recv_all(int(length))
         # parse the message
         message_dict = util.parse_message(message)
         num_of_requests = int(message_dict['num_of_requests'])
-        # iterating threw all updates
+        # iterating through all updates
         for i in range(num_of_requests):
             action = message_dict['action']
             if action == 'upload file':
@@ -267,7 +267,7 @@ def handle_req():
 
 
 if __name__ == '__main__':
-    # saves argunets to main
+    # saves arguments to main
     server_IP = sys.argv[1]
     server_port = int(sys.argv[2])
     path_to_folder = sys.argv[3]
@@ -295,7 +295,7 @@ if __name__ == '__main__':
     # if it is a new client
     else:
         f = util.get_size_of_dir(path_to_folder)
-        message = util.generate_message('new client', path_to_folder,0, f + 1)
+        message = util.generate_message('new client', path_to_folder, 0, f + 1)
         util.get_socket().send(message)
         # gets id for the client
         my_id = util.get_socket().recv(128).decode('utf-8')
@@ -305,6 +305,6 @@ if __name__ == '__main__':
         util.set_client_computer_id(computer_id)
         # sync the folder to the server
         util.upload_dir_to_server(path_to_folder)
-    # creates Watcher instance and activate the watch dog
+    # creates Watcher instance and activate the watchdog
     w = Watcher()
     w.run(time_between_syncs)
