@@ -116,11 +116,12 @@ class Utils:
         if self.__connection == 'client':
             self.__ignore_wd[_message_dict['path']] = (time.time(), 'open')
         os.makedirs(_message_dict['path'], exist_ok=True)
+        print('os.makedirs(' + _message_dict['path'] + ', exist_ok=True)')
         if self.__connection == 'client':
             self.__ignore_wd[_message_dict['path']] = (time.time(), 'close')
         # self.__ignore_wd.remove(_message_dict['path'])
 
-    def get_file(self, _message_dict):#
+    def get_file(self, _message_dict):  #
         d = self.recv_all(int(_message_dict['size_of_data']))
         if self.__connection == 'client':
             self.__ignore_wd[_message_dict['path']] = (time.time(), 'open')
