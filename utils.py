@@ -87,7 +87,6 @@ class Utils:
             # if server parse message, add cwd and client id to received path
             d['path'] = os.path.join(os.getcwd(), 'DB', d['id'], d['path'])
             d['new_path'] = os.path.join(os.getcwd(), 'DB', d['id'], d['new_path'])
-        print(d)
         return d
 
     def remove_dir(self, path):
@@ -217,7 +216,6 @@ class Utils:
         m = bytes(m, 'utf-8')
         size = bytes(str(len(m)).zfill(16), 'utf-8')
         to_send = size + m
-        print(to_send)
         return to_send
 
     def send_move_file(self, path, new_path, num_of_requests=1):
