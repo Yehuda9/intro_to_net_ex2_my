@@ -203,15 +203,17 @@ if __name__ == '__main__':
                     comp.get_requests()[0]['num_of_requests'] = len(comp.get_requests())
                 except:
                     pass
+                n = len(comp.get_requests())
                 for req in comp.get_requests():
                     if req['action'] == 'upload file':
-                        util.upload_file(req['path'], req['num_of_requests'])
+                        util.upload_file(req['path'], n)
                     if req['action'] == 'remove file':
-                        util.send_remove_file(req['path'], req['num_of_requests'])
+                        util.send_remove_file(req['path'], n)
                     if req['action'] == 'upload path':
-                        util.upload_path(req['path'], req['num_of_requests'])
+                        util.upload_path(req['path'], n)
                     if req['action'] == 'move file':
-                        util.send_move_file(req['path'], req['new_path'])
+                        util.send_move_file(req['path'], req['new_path'], n)
+                    n -= 1
                 # print(comp.get_requests())
                 comp.clear_requests()
                 print(comp.get_requests())
