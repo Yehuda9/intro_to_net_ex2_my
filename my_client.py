@@ -32,7 +32,6 @@ class Watcher:
         except Exception as e:
             util.set_socket(socket(AF_INET, SOCK_STREAM))
             try:
-                print('connect requests_updates')
                 util.get_socket().connect((server_IP, server_port))
                 util.get_socket().send(m)
                 handle_req()
@@ -62,7 +61,6 @@ class Watcher:
                     for a in copy.keys():
                         if copy[a][1] == 'close' and copy[a][0] + 3 < time.time():
                             util.get_ignore_wd().pop(a)
-                    print(self.event_handler.get_in_event(), self.event_handler.get_in_req())
                     # checks if we can ask for updates without overriding another socket
                     if not self.event_handler.get_in_event() and not self.event_handler.get_in_req():
                         self.requests_updates()
@@ -123,7 +121,6 @@ class Handler(FileSystemEventHandler):
         i = 0
         while self.__in_req:
             i += 1
-            print(i)
             continue
 
     def on_created(self, event):
@@ -131,7 +128,6 @@ class Handler(FileSystemEventHandler):
         sends the the file/directory that has been created to the server (if needed)
         :param event: event for creating file/directory
         """
-        print(util.get_ignore_wd())
         p = event.src_path
         """checks if we need to send the event or ignore it (if its an event we got from the server in the last 3
         seconds)"""
@@ -143,7 +139,6 @@ class Handler(FileSystemEventHandler):
             self.wait_for_handle_req_fin()
             self.__in_event = True
             util.set_socket(socket(AF_INET, SOCK_STREAM))
-            print('connect on_created')
             print("Received created event - %s." % p)
             util.get_socket().connect((server_IP, server_port))
             # sends the file or the directory - accordingly
@@ -159,7 +154,6 @@ class Handler(FileSystemEventHandler):
         sends the the file/directory that has been modified to the server (if needed)
         :param event: event for modifying file/directory
         """
-        print(util.get_ignore_wd())
         p = event.src_path
         """checks if we need to send the event or ignore it (if its an event we got from the server in the last 3
         seconds)"""
@@ -186,7 +180,6 @@ class Handler(FileSystemEventHandler):
         sends the the path to the file/directory that has been deleted to the server (if needed)
         :param event: event for deleting file/directory
         """
-        print(util.get_ignore_wd())
         p = event.src_path
         """checks if we need to send the event or ignore it (if its an event we got from the server in the last 3
                 seconds)"""
@@ -270,7 +263,7 @@ if __name__ == '__main__':
     server_port = int(sys.argv[2])
     path_to_folder = sys.argv[3]
     rel_folder_name = path_to_folder.split(os.sep)[-1]
-    time_between_syncs = sys.argv[4]
+    time_between_syncs = int(sys.argv[4])
     my_id = '0'
     # create util instance for this client
     util = Utils('client', socket(AF_INET, SOCK_STREAM), path_to_folder, my_id)
